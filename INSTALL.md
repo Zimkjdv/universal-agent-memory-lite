@@ -72,9 +72,23 @@ ID 必須相同，不改 Repo Manifest。保留舊候選紀錄並明確選定新
 - Registry 順序：--registry → UAML_HOME/registry.json → OS 使用者資料目錄。唯讀命令不自動建立它。
 - 若 Git 報 dubious ownership，先確認檔案擁有者；請以 Repository 擁有者帳號執行，或自行審核 Git 信任設定。工具不修改 safe.directory，也刻意不接受環境內 GIT_DIR/GIT_CONFIG_* 覆寫，避免解析錯 Repo。
 - 遺留 `.uaml/write.lock` 或 Registry `.lock`：先確認沒有活程序，不自動刪除或按鎖齡搶鎖。
-- 半完成 checkpoint：停止重存，核對 Registry 同層 transactions/ 的 prepared journal、backups/ 與原檔；本輪尚無自動 repair。不要盲目刪除 checkpoint。
+- 半完成 checkpoint：停止重存，使用下列預覽／套用流程；不要盲目刪除 checkpoint 或搶鎖。
 - 雛形只接受標準三個 docs/memory 路徑；自訂路徑尚未開放。
 - 讀寫限本機合作程序。Windows ACL 保護依目前使用者目錄繼承，完整權限強化與非合作編輯競態仍待驗收。
+
+## 中斷 checkpoint 的安全復原
+
+從 Registry 同層 `transactions/<snapshot-id>.json` 找出 prepared 交易。新交易會先保存完整 before/after payload，再開始替換 Repo 記憶。repair 只能補完這個已保存快照，不生成新內容：
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath --json repair --transaction '<snapshot-id>'
+# 檢視 actions 後，複製輸出的 plan_hash
+& $pythonPath --repo $repoPath --registry $registryPath --json repair --transaction '<snapshot-id>' --apply --expect-plan '<plan-hash>'
+```
+
+預覽完全唯讀；apply 在合作鎖內重新檢查身份、payload 及每個目標 hash，最後公布 checkpoint。任一目標已被另外修改、Binding 改變或 payload 損壞，全部檢查通過前不寫入。apply 中再中斷可重新預覽後續步驟。只保留及補完資料，不刪除或回滾人工成果。
+
+舊 schema_version 1 journal 沒有可驗證 payload，回報 REPAIR_UNSUPPORTED，需人工核對備份；不假造 after-image。真實程序被終止後可能遺留 lock，工具不按時間自動移除，需使用者先確認持有者。Vault 反向索引初始化若在 journal 建立之前中斷，不在此 repair 的涵蓋範圍。
 
 ## 開發驗證
 

@@ -26,6 +26,16 @@
 - 本輪 46 項自動測試通過；執行環境回報 Windows 10 build 19045，Windows 11 與真實 Agent 驗收仍待完成。證據範圍見 [驗收計畫](docs/ACCEPTANCE-TESTS.md)。
 - M5–M8 保持後續工作；未執行真實 Codex／Claude 接管或第二台 Windows 驗收。
 
+## 後續三項優先工作（2026-10-22）
+
+依使用者要求逐項完成、驗證、Commit、Push，推送成功才進入下一項：
+
+1. **M3：中斷 checkpoint 安全復原** — 已實作 repair 唯讀預覽、精確 plan hash、after-image 完成與人工變更保護；驗證後提交。
+2. **M5：共用知識儲存與搜尋** — 尚未開始。
+3. **M5：知識去重與安全修訂** — 尚未開始。
+
+第一項不包含 stale-lock 強制接管、ACL 強化、任意 rollback 或跨機同步交易；不把 M3 整體標為完成。
+
 ## Phase 5 建議里程碑
 
 | 里程碑 | 工作 | 出口條件 |

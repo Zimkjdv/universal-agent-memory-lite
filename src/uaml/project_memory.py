@@ -125,7 +125,7 @@ def checkpoint(git: Git, registry_path: Path, agent: str):
 def _save(git, registry_path, manifest, agent, initial):
     snapshot_id, updated = str(uuid4()), now()
     observation = git.observe(exclusions(manifest))
-    prepared, previous, prior_snapshots = {}, {}, []
+    prepared, previous, originals, prior_snapshots = {}, {}, {}, []
     for key, kind, default in (("project_state", "project_state", STATE_BODY), ("handoff", "handoff", HANDOFF_BODY)):
         relative = manifest["memory"][key]
         path = inside(git.root, relative)
@@ -133,6 +133,7 @@ def _save(git, registry_path, manifest, agent, initial):
         if old is None:
             header, body = {"revision": 0}, default
         else:
+            safe_metadata(old.decode("utf-8-sig"))
             header, body = frontmatter(old)
             memory(header, kind, manifest["project"]["id"])
             prior_snapshots.append(header["snapshot_id"])
@@ -144,6 +145,7 @@ def _save(git, registry_path, manifest, agent, initial):
         safe_metadata(new.decode("utf-8"))
         prepared[relative] = new
         previous[relative] = digest(old) if old is not None else None
+        originals[relative] = old
     checkpoint_path = inside(git.root, manifest["memory"]["checkpoint"])
     old_checkpoint = None if initial else read_bytes(checkpoint_path)
     if old_checkpoint:
@@ -154,13 +156,29 @@ def _save(git, registry_path, manifest, agent, initial):
     checkpoint_value = {"schema_version": 1, "project_id": manifest["project"]["id"],
                         "snapshot_id": snapshot_id, "updated_at": updated,
                         "files": {name: digest(data) for name, data in prepared.items()}}
-    journal = registry_path.parent / "transactions" / f"{snapshot_id}.json"
-    journal_value = {"schema_version": 1, "repository_root": str(git.root),
+    # Persist complete after-images before publishing the prepared journal. A
+    # repair can finish the same snapshot without inventing unsaved information.
+    prepared[manifest["memory"]["checkpoint"]] = json_bytes(checkpoint_value)
+    originals[manifest["memory"]["checkpoint"]] = old_checkpoint
+    entries = []
+    for index, (relative, data) in enumerate(prepared.items()):
+        after_blob = f"transactions/{snapshot_id}.{index}.after"
+        before_blob = f"transactions/{snapshot_id}.{index}.before" if originals[relative] is not None else None
+        write(inside(registry_path.parent, after_blob), data, None)
+        if before_blob is not None:
+            write(inside(registry_path.parent, before_blob), originals[relative], None)
+        entries.append({"path": relative, "before_hash": digest(originals[relative]) if originals[relative] is not None else None,
+                        "after_hash": digest(data), "before_blob": before_blob, "after_blob": after_blob})
+    journal = inside(registry_path.parent, f"transactions/{snapshot_id}.json")
+    journal_value = {"schema_version": 2, "repository_root": str(git.root), "project_id": manifest["project"]["id"],
+                     "binding_fingerprint": digest(json_bytes(manifest)), "entries": entries,
                      "status": "prepared", "checkpoint": checkpoint_value,
                      "previous_hashes": previous, "previous_checkpoint_hash": digest(old_checkpoint) if old_checkpoint else None}
     write(journal, json_bytes(journal_value), None)
     # A crash leaves the prepared journal and old backups. No blind rollback.
     for relative, data in prepared.items():
+        if relative == manifest["memory"]["checkpoint"]:
+            continue
         write(inside(git.root, relative), data, previous[relative], registry_path.parent / "backups")
     write(checkpoint_path, json_bytes(checkpoint_value), digest(old_checkpoint) if old_checkpoint else None,
           registry_path.parent / "backups")

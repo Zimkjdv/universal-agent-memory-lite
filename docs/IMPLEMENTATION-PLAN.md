@@ -55,7 +55,7 @@ uaml knowledge apply <proposal>
 uaml repair
 ```
 
-目前已實作 doctor、resolve、recover、checkpoint、vault register/relocate、project init/trust，並增加明確 vault init。其餘命令未實作。doctor/resolve/recover 唯讀；初始寫入與 checkpoint 是明確操作。完整預覽／proposal／repair 流程仍在後續範圍。操作見 [INSTALL](../INSTALL.md)。
+目前已實作 doctor、resolve、recover、checkpoint、vault register/relocate、project init/trust、vault init，以及 repair 預覽／補完。其餘命令未實作。doctor/resolve/recover 和 repair 預覽唯讀；repair apply 必須核對 plan_hash。完整知識 proposal 仍在後續範圍。操作見 [INSTALL](../INSTALL.md)。
 
 ## 開發順序
 

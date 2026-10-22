@@ -10,6 +10,7 @@ from .git_state import Git
 from .paths import registry_location, require_local_registry
 from .project_memory import checkpoint, init_project, init_vault
 from .recovery import recover
+from .repair import repair
 
 
 def parser():
@@ -23,6 +24,10 @@ def parser():
         commands.add_parser(name)
     save = commands.add_parser("checkpoint", help="save current repo Markdown and a fresh Git snapshot")
     save.add_argument("--agent", default="manual")
+    fix = commands.add_parser("repair", help="preview or finish a prepared checkpoint")
+    fix.add_argument("--transaction", required=True, help="snapshot UUID from the local journal filename")
+    fix.add_argument("--apply", action="store_true")
+    fix.add_argument("--expect-plan", help="plan_hash returned by the read-only preview")
     vaults = commands.add_parser("vault").add_subparsers(dest="action", required=True)
     init = vaults.add_parser("init", help="explicitly identify an existing Vault directory")
     init.add_argument("path", type=Path)
@@ -62,6 +67,8 @@ def dispatch(args):
         return recover(git, registry_path)
     if args.command == "checkpoint":
         return checkpoint(git, registry_path, args.agent)
+    if args.command == "repair":
+        return repair(git, registry_path, args.transaction, args.apply, args.expect_plan)
     if args.command == "project":
         if args.action == "init":
             return init_project(git, registry_path, args.vault_id, args.name)
@@ -98,6 +105,10 @@ def render(value):
         lines.append(value["next_step"])
     if "vault_id" in value:
         lines.append(f"Vault ID: {value['vault_id']}")
+    if "plan_hash" in value:
+        lines.append(f"Plan hash: {value['plan_hash']}")
+        for action in value.get("actions", []):
+            lines.append(f"  {action['action']}: {action['path']}")
     return "\n".join(lines)
 
 
@@ -118,4 +129,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED"} else 1

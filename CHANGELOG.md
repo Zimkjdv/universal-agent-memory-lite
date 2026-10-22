@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-22：優先項目 1
+
+- checkpoint journal v2 在寫入前保存可驗證 before/after payload。
+- repair 唯讀預覽與明確套用；綁定 plan_hash、Project／checkout 身份與每個目標 hash，checkpoint 最後公布。
+- 人工編輯、損壞 payload、遺留鎖與舊 journal 安全拒絕；已完成交易不得覆蓋後續內容。
+- 復原、CLI 與拒絕案例測試；此項獨立 Commit／Push 後才開始下一項。
+
 ### Added — 2026-10-22
 
 - Python CLI 雛形 `0.1.0.dev0`、本地隔離安裝方式與一次性示範。

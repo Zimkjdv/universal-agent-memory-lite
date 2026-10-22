@@ -17,6 +17,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge、去重、�
 - 文件本地連結與檔名大小寫、code fences、Python 語法已檢查。
 - 測試使用臨時資料，未對真實 Obsidian Vault 操作；未宣稱 Windows 11、Codex／Claude 實際接管或第二台電腦已通過。
 
+### 優先項目 1：checkpoint repair
+
+2026-10-22：完整自動測試 57 項通過。新增 11 個 repair 案例，涵蓋唯讀預覽、CLI 套用、兩個寫入中斷點、人工變更、payload／路徑竄改、精確 plan hash、鎖、舊 journal 與完成交易的後續修改。這是合成資料／故障注入證據，不代表已完成所有 T11/T12 或真實斷電驗收。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

@@ -5,7 +5,7 @@
 UAML 以可攜式 Repository–Vault Binding，連結 Git 專案、專案交接記錄與本地 Obsidian 知識庫，讓 Codex、Claude Code 及未來其他 Agent 接續已持久化的開發工作。
 
 > **目前狀態：可本地安裝的 CLI 雛形 `0.1.0.dev0`，完整 MVP 尚未完成。**
-> 2026-10-22 已獲授權先實作 Roadmap 的部分核心項目。具備身份初始化、Registry、checkout 授權、唯讀解析／恢復及基本 checkpoint；共用知識、完整修復、Agent 適配與真實跨機驗收仍待完成。`v0.1.0` 是目標首版，不是已發布版本。
+> 2026-10-22 已獲授權先實作 Roadmap 的部分核心項目。具備身份初始化、Registry、checkout 授權、唯讀解析／恢復、checkpoint 與中斷交易的預覽／補完；共用知識、Agent 適配與真實跨機驗收仍待完成。`v0.1.0` 是目標首版，不是已發布版本。
 
 ## 目標情境
 
@@ -69,7 +69,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe examples/demo.py
 ```
 
-示範只使用臨時 Repository／Vault。實際試用見 [INSTALL.md](INSTALL.md)。目前可用命令：`vault init/register/relocate`、`project init/trust`、`doctor`、`resolve`、`checkpoint`、`recover`，支援 JSON 與非零錯誤碼。完整規格中的其餘命令仍是提案。
+示範只使用臨時 Repository／Vault。實際試用見 [INSTALL.md](INSTALL.md)。目前可用命令：`vault init/register/relocate`、`project init/trust`、`doctor`、`resolve`、`checkpoint`、`recover`、`repair`，支援 JSON 與非零錯誤碼。repair 預設唯讀，套用需明確提供預覽 plan_hash。完整規格中的其餘命令仍是提案。
 
 目前 trust 僅授予該專案反向索引的讀取範圍；沒有共用知識搜尋或 Vault 一般寫入權限。雛形沒有 Hooks、MCP Server 或背景服務，不自動修改既有 Agent 入口。
 

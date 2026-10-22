@@ -2,7 +2,7 @@
 
 狀態：完整安全設計。2026-10-22 雛形已具備路徑／解析防護、合作鎖、hash、備份及 checkpoint 中斷偵測；尚未完成完整安全驗收。Local-first 不等於雲端 Agent 讀取後資料永不離開電腦。
 
-本輪限制：沒有自動 repair 或 stale-lock 接管；備份／Registry 依使用者目錄繼承權限，尚無完整 Windows ACL 設定與驗收。明確寫入命令沒有完整 diff/proposal UI。初始新檔以同目錄暫存檔＋hard link 發布，依賴本機檔案系統；不支援時回報失敗，不改用可能覆寫的替代流程。雛形秘密檢查只辨識少數常見模式，不能當成完整 DLP。
+已加入 repair 預覽／明確套用，僅補完 journal v2 的既有 after-image，不自動回滾、刪資料或接管 stale-lock。備份／Registry 依使用者目錄繼承權限，尚無完整 Windows ACL 設定與驗收。初始新檔以同目錄暫存檔＋hard link 發布，依賴本機檔案系統；不支援時回報失敗。雛形秘密檢查只辨識少數常見模式，不能當成完整 DLP。
 
 ## 信任邊界
 

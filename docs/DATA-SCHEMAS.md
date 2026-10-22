@@ -145,6 +145,12 @@ Handoff 正文必備：當前任務、已完成、未完成、主要變更檔案
 
 checkpoint 是完整性標記，不保存第三份進度。先準備／替換 Markdown，最後公布 checkpoint；詳見 [安全設計](SECURITY-AND-RISKS.md)。
 
+## 本機 checkpoint journal v2
+
+`transactions/<snapshot_id>.json` 保存 schema_version=2、repository_root、project_id、binding_fingerprint、status、checkpoint、entries、previous_hashes、previous_checkpoint_hash。每個 entry 為標準三檔之一，包含 path、before_hash、after_hash、before_blob、after_blob；payload 只能是同目錄 `<snapshot_id>.<0..2>.before/after`。先保存完整 payload 再公布 prepared，完成後改為 complete。檔案在 Registry 本機目錄，不提交 Git。
+
+repair 只接受當前身份／Manifest 指紋及精確三檔，驗證 payload、snapshot 與 checkpoint hash。plan_hash 同時綁定 journal 原始 hash 及三檔目前 hash；變更後必須重新預覽。舊 v1 沒有 payload，不自動修復。
+
 ## Shared Knowledge
 
 ```yaml
