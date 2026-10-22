@@ -81,6 +81,8 @@ trust 預設只授予該專案反向索引讀取；明確使用 `project trust -
 
 「已設定後不用再輸入 Vault 路徑」是 Registry 的目標；「每次新對話完全自動恢復」另依賴 Agent 入口、權限與實機驗證。
 
+`recover --compact` 提供預設最多 32 KiB 的 JSON 接管證據，保留來源與診斷，優先任務／Blockers／下一步，並明示所有截斷。需要完整資料時依來源檔案與 hash 核對；一般 recover 的介面保持原樣。
+
 ## 授權與研究來源
 
 本專案採 [MIT License](LICENSE)。研究參考 Obsidian Mind，但本次僅整理研究與原創設計文件，沒有匯入其程式碼。未來若重用實質程式碼，須保留適用的上游授權通知。

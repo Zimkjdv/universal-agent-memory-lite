@@ -57,6 +57,19 @@ checkpoint 保留正文，更新時間／Agent／Git 快照、revision、snapsho
 
 recover／resolve／doctor 為唯讀，不更新 Registry 或索引。recover 輸出歷史資料、來源 hash、完整性及 Git 差異；不執行筆記內容。Vault 不可用時仍嘗試讀 Repo 記憶並回報 DEGRADED。
 
+## 給 Agent 的有界恢復摘要
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath --json recover --compact
+& $pythonPath --repo $repoPath --registry $registryPath recover --compact --max-bytes 8192
+```
+
+compact 固定輸出 JSON，預設最多 32768 UTF-8 bytes（包含排版及最後換行），可選 8192–65536。一般 recover 的格式與每篇 12 KiB 摘錄保持原樣；--max-bytes 必須配合 --compact。
+
+摘要先保留綁定／Git、錯誤及每份來源的 hash、revision、snapshot、完整性結果，再分配章節摘錄。當前任務、Blockers、下一步、未完成與風險優先；讀完整的有界 State／Handoff 以找到末尾章節，不只取開頭。它不是模型生成摘要，不推論筆記未保存的事實。預算不足時 budget.truncated、omitted_changes／diagnostics／sections 及個別 section.truncated 明示省略，應按來源路徑與 hash 核對完整內容。格式有效不等於內容已驗證。
+
+此操作唯讀，不掃描 Knowledge，不執行筆記、不保存恢復報告。Git 過時／記憶損壞／Vault 不可用仍回報 DEGRADED，不能用摘要隱藏原本的警告。
+
 ## 共用技術知識
 
 預設 trust 只允許反向專案索引，不會自動取得知識權限。要試用時明確選擇：

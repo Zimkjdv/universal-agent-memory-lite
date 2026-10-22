@@ -16,6 +16,7 @@ from . import proposals
 from .validation import validate
 from . import forking
 from . import replicas
+from . import context
 
 
 def parser():
@@ -25,8 +26,11 @@ def parser():
     result.add_argument("--registry", help="private registry path outside Git (or UAML_HOME)")
     result.add_argument("--json", action="store_true", help="structured output, including errors")
     commands = result.add_subparsers(dest="command", required=True)
-    for name in ("doctor", "resolve", "recover"):
+    for name in ("doctor", "resolve"):
         commands.add_parser(name)
+    recovery = commands.add_parser("recover")
+    recovery.add_argument("--compact", action="store_true", help="bounded JSON evidence for agent handoff")
+    recovery.add_argument("--max-bytes", type=int, help="compact UTF-8 output budget, 8192..65536 (default 32768)")
     verify = commands.add_parser("validate", help="read-only binding, memory, checkpoint and optional knowledge checks")
     verify.add_argument("--knowledge", action="store_true", help="include the explicitly authorized knowledge area")
     save = commands.add_parser("checkpoint", help="save current repo Markdown and a fresh Git snapshot")
@@ -110,6 +114,10 @@ def dispatch(args):
     if args.command == "resolve":
         return resolve(git, registry_path)
     if args.command == "recover":
+        if args.max_bytes is not None and not args.compact:
+            raise UamlError("COMMAND_INVALID", "--max-bytes requires --compact.")
+        if args.compact:
+            return context.recover_context(git, registry_path, args.max_bytes if args.max_bytes is not None else context.DEFAULT_BUDGET)
         return recover(git, registry_path)
     if args.command == "validate":
         return validate(git, registry_path, args.knowledge)
@@ -147,6 +155,8 @@ def dispatch(args):
 
 
 def render(value):
+    if value.get("kind") == "recovery_context":
+        return context.encode(value).rstrip("\n")
     lines = [f"UAML {value['status']}"]
     if "binding" in value and isinstance(value["binding"], dict):
         lines.append(f"Binding: {value['binding'].get('status', value['binding'])}")
@@ -229,6 +239,6 @@ def main(argv=None):
     output = json.dumps(value, ensure_ascii=False, indent=2) if args.json else render(value)
     # Preserve Unicode on the Windows console; never execute or interpret notes.
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace", newline="\n")
     print(output)
     return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED"} else 1

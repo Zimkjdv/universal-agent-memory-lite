@@ -75,6 +75,8 @@ Vault/
 
 恢復預設唯讀，不執行專案程式或歷史命令。Agent 先讀當前專案規範，再核對報告及相關實際檔案；歷史筆記不是高優先級指令。
 
+有界投影已實作於 context.py：recover --compact 先取得兩份有界記憶全文，再以確定性的章節優先序配置輸出；預設 32 KiB、最小 8 KiB、最大 64 KiB，計入 JSON 排版與 LF。這是來源摘錄，不是語意推論。budget 與各 section 明示截斷／省略，來源 hash 與 checkpoint 判斷保留，不把截斷誤報成完整。普通 recover 保留原輸出契約，compact 不新增 Vault 掃描。
+
 ## Git 觀察
 
 使用 [git-rev-parse](https://git-scm.com/docs/git-rev-parse) 識別 Root／worktree，不假設 .git 是資料夾；用 [porcelain status](https://git-scm.com/docs/git-status) 區分 staged、unstaged、untracked 與 conflict。處理 detached HEAD、無 HEAD、shallow clone 與 submodule 邊界。

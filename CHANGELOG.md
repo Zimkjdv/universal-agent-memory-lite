@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-22：第三輪優先項目 1
+
+- recover --compact：預設 32 KiB、可調 8–64 KiB 的 UTF-8 JSON 輸出上限，包含排版與換行。
+- 以來源 hash／完整性／Git 差異為基礎，優先保留任務、Blockers、下一步及風險，讀到長筆記末尾章節。
+- 省略數量與章節截斷明示；不推論事實、不讀知識、不修改資料，保留既有完整 recover 介面。
+- 10 個新增案例覆蓋實際 CLI bytes、Unicode／跳脫、缺失／過時、唯讀與完整介面相容性。
+
 ### Added — 2026-10-22：第二輪優先項目 3
 
 - vault compare/select：已註冊副本的有界唯讀比較、機器可讀 hash、衝突及明確權威選擇。

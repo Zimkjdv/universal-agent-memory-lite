@@ -41,6 +41,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 2026-10-22：完整自動測試 127 項通過，沒有 skip。新增 14 案例，覆蓋唯讀等價比較、索引分歧、register --select 不略過分歧、精確比較 hash／過期確認、缺失舊位置、錯 ID／不同 layout 拒讀、未授權零內容比較、無反向索引拒選、讀取拒絕、知識獨立授權與分歧、普通解析零知識掃描及 CLI。選擇前後 Vault 位元組不變。這是臨時資料與故障注入證據；T07 真實 ACL／同步程式衝突、T15 大型資料實測與完整跨機驗收仍待完成。
 
+### 第三輪項目 1：有界恢復摘要
+
+2026-10-22：完整 137 項測試通過。新增 10 案例，實測 8 KiB／32 KiB 的 UTF-8 JSON（包含實際 stdout 與換行）、Unicode／跳脫、大量 Git 變更省略數、晚於長篇歷史的 Blockers／下一步、fenced 假標題、唯讀／零知識掃描、缺失綁定及 Vault／checkpoint 診斷；既有完整 recover 介面保持。這是輸出上限證據，不替代 T15 真實 Agent Token／大型資料 I/O／耗時測量。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。
