@@ -87,8 +87,16 @@ def authorize(git, registry_path: Path, write_access=False):
         raise UamlError("KNOWLEDGE_ACCESS_DENIED", "Explicitly run project trust --knowledge read/write for this UAML knowledge area.")
     manifest, _ = load_project(git)
     vault_path = Path(result["vault_path"])
-    vault_data = registry.read_vault(vault_path)
-    return manifest, vault_path, inside(vault_path, vault_data["layout"]["knowledge"])
+    if digest(read_bytes(inside(vault_path, ".uaml/vault.yaml"))) != result["vault_fingerprint"]:
+        raise UamlError("CHECKOUT_UNTRUSTED", "Vault identity metadata changed during authorization.")
+    # Knowledge actions explicitly check known-copy content, without making
+    # ordinary resolve/recover scan every knowledge note.
+    from .replicas import guard
+    current_registry = registry.load(registry_path)
+    if registry.selected(current_registry, manifest["binding"]["vault_id"]) != vault_path:
+        raise UamlError("WRITE_CONFLICT", "Vault selection changed during authorization.")
+    guard(manifest, current_registry, result["vault_fingerprint"], include_knowledge=True)
+    return manifest, vault_path, inside(vault_path, result["vault_layout"]["knowledge"])
 
 
 def record(path: Path):

@@ -113,7 +113,26 @@ propose 只在 Registry 同層 proposals/ 保存本機提案／payload，不寫 
 & $pythonPath --registry $registryPath vault relocate '<vault-id>' 'E:\MovedVault'
 ```
 
-ID 必須相同，不改 Repo Manifest。保留舊候選紀錄並明確選定新位置。多份同 ID 副本註冊後會取消隱含選擇；`vault register <path> --select` 代表明確選擇，不代表內容已合併或所有副本已比對。若 Vault 身份檔／layout 變更，需重新 trust。
+ID 必須相同，不改 Repo Manifest。保留舊候選紀錄並明確選定新位置。多份同 ID 副本註冊後會取消隱含選擇；`vault register <path> --select` 或 relocate 只指定初步位置，不能略過已知內容分歧。若 Vault 身份檔／layout 變更，需重新 trust。
+
+### 比較並選定副本權威
+
+先指定可用且具有本專案反向索引的候選，核准 checkout，再比較：
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath --json vault compare
+# 審查各副本的身份、索引 hash、缺失與錯誤；複製 comparison_hash
+& $pythonPath --repo $repoPath --registry $registryPath vault select $vaultPath --expect-comparison '<comparison-hash>'
+# 額外比對 Knowledge 需已有 read/write grant；比較與選擇都加 --knowledge
+& $pythonPath --repo $repoPath --registry $registryPath --json vault compare --knowledge
+& $pythonPath --repo $repoPath --registry $registryPath vault select $vaultPath --knowledge --expect-comparison '<knowledge-comparison-hash>'
+```
+
+compare 唯讀，僅列 hash 與診斷，不把筆記當指令。一般 resolve/recover 只比對已註冊副本的身份檔與本專案 PROJECT.md；知識操作及明確 --knowledge 才掃描授權的 Knowledge 子樹。最多比較 8 份候選；每份知識沿用 200 目錄項／16 MiB 限制，不掃描私人其他區域或全磁碟。
+
+REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 comparison_hash，僅將本次本專案權威確認寫入本機 Registry。它不合併、同步、刪除或改寫 Vault；單純 register --select 無法確認分歧。確認只適用於當前候選集合與內容 hash；任何後續內容變更（包括合法新增筆記）若造成分歧，就需重新比較及選擇。只比較專案索引的確認不涵蓋知識分歧。
+
+缺失的舊搬遷路徑列為 MISSING，不建立替代內容，也不證明離線副本等價；其餘可用副本仍能解析。錯 ID、不同身份／layout、不可讀、損壞或不完整掃描回報 REPLICA_UNVERIFIED，不能透過 select 忽略。先修正路徑／權限／資料；無有效索引的副本不能選為權威。未註冊副本與候選外變更不在檢查範圍。REPLICA_EQUIVALENT 只表示本次範圍內的可用內容等價，需一併檢視 missing_count。
 
 ## 輸出與故障
 

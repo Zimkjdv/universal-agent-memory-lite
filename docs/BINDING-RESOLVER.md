@@ -2,7 +2,7 @@
 
 狀態：已實作雛形的唯讀解析、Registry、候選選擇、trust 與 relocate；下列為完整設計契約，未完成部分另列。Resolver 不建立 Vault、不改 ID、不修改綁定或全域設定。
 
-grant 預設只開放 project_link，pin Manifest／Vault 身份檔 hash；明確 --knowledge read/write 可開放 layout.knowledge 子樹。多候選預設拒絕，--select 或 relocate 明確選定後才繼續；尚未比較所有副本內容來自動產生 REPLICA_CONFLICT。完整 WRITE_DENIED 探測尚未實作；checkpoint repair 與獨立 project fork 已可預覽／套用。記憶完整性由 recover 驗證，resolve 成功只表示 Binding 成功。
+grant 預設只開放 project_link，pin Manifest／Vault 身份檔 hash；明確 --knowledge read/write 可開放 layout.knowledge 子樹。多候選需明確位置；初步選擇後，Resolver 有界比對已註冊副本的身份及本專案索引，分歧回報 REPLICA_CONFLICT。知識內容比較只在明確知識操作或 vault compare --knowledge 觸發。完整 WRITE_DENIED 探測尚未實作；checkpoint repair 與獨立 project fork 已可預覽／套用。記憶完整性由 recover 驗證，resolve 成功只表示 Binding 成功。
 
 ## Registry 位置與維護
 
@@ -40,7 +40,7 @@ resolve(repository_path, registry_path?, mode="read")
 5. 檢查存在性、可讀性、路徑型態、canonical path 及連結邊界。
 6. 核對 Vault ID，不依名稱猜測。
 7. 多候選未選定時要求選擇；已知分歧不得用 mtime 自動選最新。
-8. 核對反向索引的 project_id、vault_id、project_memory_id。
+8. 核對反向索引的 project_id、vault_id、project_memory_id；多副本比對已授權身份及本專案索引，若分歧需當前 hash 的權威確認。
 9. 驗證記憶 Schema、缺失與 checkpoint 完整性。
 10. 返回能力與位置，由 Recovery 載入必要資料並核對 Git／檔案。
 
@@ -58,6 +58,7 @@ resolve(repository_path, registry_path?, mode="read")
 | VAULT_ID_MISMATCH | 拒絕候選，不覆寫身份 |
 | MULTIPLE_CANDIDATES | 要求選擇，不猜測 |
 | REPLICA_CONFLICT | 停止自動寫入，保留差異 |
+| REPLICA_UNVERIFIED | 已知候選錯身份、不可讀、損壞或超限，拒絕把不完整比較確認為權威 |
 | READ_DENIED | 不當作空檔或不存在 |
 | WRITE_DENIED | 可讀時提供唯讀恢復 |
 | PROJECT_LINK_MISSING / MISMATCH | 不借用其他專案記憶 |
@@ -80,6 +81,16 @@ Vault 不可用時，Repository 內記憶仍可唯讀使用，但報告明示「
 | 同一專案協作用 Fork | 只有明確確認共享關係才保留身份 |
 
 單靠 Git 無法總是區分 Fork 與搬遷。未註冊的副本不在可觀測範圍，不能宣稱找出所有副本。選定候選不等於自動合併內容；分歧需比較並決策。
+
+## 已實作的副本比較契約
+
+`replicas.compare(git, registry_path, include_knowledge=False)` 在既有 checkout grant、選定 Vault 身份與專案關聯都有效後才比較；只略過衝突阻擋以供診斷，不能略過授權。最多 8 個已註冊候選；逐份先核對 Vault ID 及核准身份檔 hash，才讀本專案反向索引。相同 UUID 但不同 layout 不會取得新讀取範圍。
+
+一般解析不掃描 Knowledge。明確 --knowledge 或知識操作才在 read/write grant 內比較各副本的 Knowledge catalog hash，沿用單層有界掃描。比較回傳 copies、diagnostics、missing_count、project_diverged、knowledge_diverged 與 comparison_hash；hash 綁定候選 ID／路徑／可用性／身份／索引，知識範圍另包含 catalog。缺失舊路徑不建立替代副本，不等於其離線內容已核對。
+
+`replicas.select(..., expected_comparison, include_knowledge=False)` 在 Registry 鎖內重新比較；精確 hash 相符且目標有有效索引才保存本專案的 authority 決策。REPLICA_AUTHORITY_CONFIRMED 表示已確認當前分歧，並非已合併。內容或候選集合改變需重審；普通索引確認不能用於知識分歧。不可讀／損壞／身份不符的候選回報 REPLICA_UNVERIFIED，不能直接略過。
+
+選定候選仍是該 Vault 的本機選擇；分歧確認依 project_id＋project_memory_id 隔離，其他共用專案需各自確認。沒有自動同步、刪副本、比較私人其他區域、跨機分散式鎖或背景掃描。操作步驟見 [INSTALL](../INSTALL.md)。
 
 ## 跨機流程
 

@@ -16,6 +16,8 @@
 
 ## 已確認的產品邊界
 
+第二輪依使用者優先工作授權，加入唯讀 validate、明確目標的獨立 Fork，以及已註冊副本的有界比較。副本分歧以本機 hash 綁定權威選擇解決，不以最新 mtime 猜測，不合併或同步內容。一般恢復只讀身份與本專案索引；已授權 Knowledge 的副本比較限明確操作。這些是雛形採用的保守策略，仍須正式實機驗收。
+
 - 正式名稱 Universal Agent Memory Lite（UAML），首版目標 v0.1.0，無舊版相容要求。
 - Local-first、Markdown-first、portable、agent-agnostic、non-invasive。
 - Repository–Vault Portable Binding 為核心功能，不可省略。

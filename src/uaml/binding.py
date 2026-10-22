@@ -64,7 +64,7 @@ def _trust(git: Git, registry_path: Path, knowledge_access="none"):
     return {"status": "TRUSTED", "project_id": manifest["project"]["id"], "access": "read", "scope": "project_link", "knowledge_access": knowledge_access}
 
 
-def resolve(git: Git, registry_path: Path):
+def resolve(git: Git, registry_path: Path, check_replicas=True):
     manifest, raw = load_project(git)
     result = {"status": "UNRESOLVED", "project": manifest["project"],
               "binding": manifest["binding"], "repository_root": str(git.root),
@@ -82,11 +82,18 @@ def resolve(git: Git, registry_path: Path):
         if grant["vault_fingerprint"] != digest(read_bytes(inside(path, ".uaml/vault.yaml"))):
             raise UamlError("CHECKOUT_UNTRUSTED", "Vault layout or identity metadata changed; review and trust again.")
         file = verify_link(path, data, manifest)
+        replica_state = None
+        if check_replicas:
+            from .replicas import guard
+            replica_state = guard(manifest, value, grant["vault_fingerprint"])
         # Check containment of repository memory, but keep recovery integrity separate.
         for key in ("project_state", "handoff", "checkpoint"):
             inside(git.root, manifest["memory"][key])
         result.update(status="RESOLVED", vault_path=str(path), project_link=str(file),
+                      vault_fingerprint=grant["vault_fingerprint"], vault_layout=data["layout"],
                       access={"read": True, "write": "unknown", "scope": "project_link", "knowledge_access": grant.get("knowledge_access", "none")})
+        if replica_state:
+            result["replicas"] = replica_state
     except UamlError as exc:
         result["status"] = exc.code
         result["diagnostics"].append(exc.diagnostic())

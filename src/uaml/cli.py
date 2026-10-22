@@ -15,6 +15,7 @@ from . import knowledge
 from . import proposals
 from .validation import validate
 from . import forking
+from . import replicas
 
 
 def parser():
@@ -44,6 +45,12 @@ def parser():
     relocate = vaults.add_parser("relocate", help="select a relocated Vault after checking its stable ID")
     relocate.add_argument("vault_id")
     relocate.add_argument("path", type=Path)
+    compare = vaults.add_parser("compare", help="read-only comparison of this approved project's registered Vault copies")
+    compare.add_argument("--knowledge", action="store_true")
+    select = vaults.add_parser("select", help="acknowledge a reviewed authoritative copy for this project")
+    select.add_argument("path", type=Path)
+    select.add_argument("--expect-comparison", required=True)
+    select.add_argument("--knowledge", action="store_true")
     projects = commands.add_parser("project").add_subparsers(dest="action", required=True)
     init = projects.add_parser("init")
     init.add_argument("--vault", required=True, dest="vault_id")
@@ -83,6 +90,11 @@ def parser():
 def dispatch(args):
     registry_path = registry_location(args.registry)
     if args.command == "vault":
+        if args.action in ("compare", "select"):
+            git = Git(args.repo)
+            if args.action == "compare":
+                return replicas.compare(git, registry_path, args.knowledge)
+            return replicas.select(git, registry_path, args.path, args.expect_comparison, args.knowledge)
         # No implicit creation during register/relocate.
         if args.action == "init":
             return init_vault(args.path.resolve(), args.name)
@@ -186,6 +198,13 @@ def render(value):
         lines.append(f"Proposal ID: {value['proposal_id']}")
     if "fork_id" in value:
         lines.append(f"Fork plan: {value['fork_id']}; project ID: {value['project']['id']}")
+    if "comparison_hash" in value:
+        lines.append(f"Replica comparison hash: {value['comparison_hash']}")
+    for copy in value.get("copies", []):
+        lines.append(f"Copy {copy['candidate_id']}: {copy['status']} ({copy['path']})")
+        lines.append(f"  project link: {copy['project_link_hash']}; knowledge: {copy['knowledge_hash']}")
+    if "replicas" in value:
+        lines.append(f"Replicas: {value['replicas']['status']}")
     for candidate in value.get("candidates", []):
         lines.append(f"Similar candidate {candidate['id']}: score {candidate['score']}")
     if "untrusted_diff" in value:
@@ -212,4 +231,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED"} else 1

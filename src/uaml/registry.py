@@ -23,7 +23,7 @@ def validate(value):
         raise UamlError("SCHEMA_INVALID", "Invalid Registry collections.")
     seen_ids = set()
     for item in value["vaults"]:
-        fields(item, ("vault_id", "candidates", "selected_candidate_id"))
+        fields(item, ("vault_id", "candidates", "selected_candidate_id"), ("replica_resolutions",))
         identifier(item["vault_id"])
         if item["vault_id"] in seen_ids or not isinstance(item["candidates"], list) or not item["candidates"]:
             raise UamlError("SCHEMA_INVALID", "Duplicate Vault or invalid candidate list.")
@@ -42,6 +42,22 @@ def validate(value):
         selected_id = item["selected_candidate_id"]
         if selected_id is not None and (not isinstance(selected_id, str) or selected_id not in candidates):
             raise UamlError("SCHEMA_INVALID", "Selected candidate is missing.")
+        resolutions = item.get("replica_resolutions", [])
+        if not isinstance(resolutions, list):
+            raise UamlError("SCHEMA_INVALID", "Replica resolutions must be a list.")
+        for resolution in resolutions:
+            fields(resolution, ("project_id", "project_memory_id", "selected_candidate_id", "project_comparison_hash", "knowledge_comparison_hash", "accepted_at"))
+            for key in ("project_id", "project_memory_id", "selected_candidate_id"):
+                identifier(resolution[key])
+            if resolution["selected_candidate_id"] not in candidates:
+                raise UamlError("SCHEMA_INVALID", "Replica resolution references an unknown candidate.")
+            for key in ("project_comparison_hash", "knowledge_comparison_hash"):
+                hash_value = resolution[key]
+                if key == "knowledge_comparison_hash" and hash_value is None:
+                    continue
+                if not isinstance(hash_value, str) or len(hash_value) != 64 or any(c not in "0123456789abcdef" for c in hash_value):
+                    raise UamlError("SCHEMA_INVALID", "Invalid replica comparison hash.")
+            timestamp(resolution["accepted_at"])
     roots = set()
     for grant in value["checkout_grants"]:
         fields(grant, ("repository_root", "git_directory", "remote_fingerprint", "binding_fingerprint",

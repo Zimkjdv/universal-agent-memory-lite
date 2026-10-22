@@ -111,6 +111,8 @@ knowledge_ids: []
 
 Registry 含本機路徑，禁止提交 Git；新電腦重新註冊，而非盲目套用舊 Registry。
 
+每個 vaults entry 可選 `replica_resolutions` 列表，預設空。每筆包含 UUID `project_id`、`project_memory_id`、`selected_candidate_id`，SHA-256 `project_comparison_hash`、`knowledge_comparison_hash`（未比對知識為 null），以及 RFC 3339 `accepted_at`。selected_candidate_id 必須是該 Vault 已註冊候選。決策只確認當前比較範圍，不授予新知識權限；候選、身份、索引或已比較知識變更後必須重新核對。比較 hash 不用 mtime 或 revision 判定哪份較新。
+
 ## Project State／Handoff
 
 State 保存整體狀態、里程碑、未完成事項及決策索引；Handoff 保存最近接手上下文。共通 frontmatter 範例：

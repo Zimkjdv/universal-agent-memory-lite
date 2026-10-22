@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-22：第二輪優先項目 3
+
+- vault compare/select：已註冊副本的有界唯讀比較、機器可讀 hash、衝突及明確權威選擇。
+- Resolver 比對已授權身份及本專案索引；知識操作額外比對授權 Knowledge，不在普通恢復時掃描知識。
+- 本機 replica_resolutions 綁定專案、候選及比較 hash；內容改變使舊確認失效，register --select 不能略過分歧。
+- 缺失舊路徑明示，不可讀／錯身份／損壞候選拒絕確認；不自動合併、同步、刪除或建立替代 Vault。
+- 14 個新案例覆蓋比較、CLI、授權、過期確認、知識分歧及不變更原資料。
+
 ### Added — 2026-10-22：第二輪優先項目 2
 
 - project fork 明確目標 Vault、私有計畫／原檔封存、hash 綁定預覽與套用。

@@ -37,6 +37,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 2026-10-22：完整自動測試 113 項通過。新增 12 案例，涵蓋新 IDs／空白記憶／重新授權、Repo／Vault 預覽無變更、來源 Vault 離線且零讀取、原 Repo／索引不變、staged／unstaged 與 Agent 規範保留、人工變更／payload／Remote 衝突、目標明確性、中斷續做、原檔封存及 CLI。T16 的實際 GitHub Fork／跨機與所有外部編輯競態仍待驗收。
 
+### 第二輪項目 3：Vault 副本內容衝突
+
+2026-10-22：完整自動測試 127 項通過，沒有 skip。新增 14 案例，覆蓋唯讀等價比較、索引分歧、register --select 不略過分歧、精確比較 hash／過期確認、缺失舊位置、錯 ID／不同 layout 拒讀、未授權零內容比較、無反向索引拒選、讀取拒絕、知識獨立授權與分歧、普通解析零知識掃描及 CLI。選擇前後 Vault 位元組不變。這是臨時資料與故障注入證據；T07 真實 ACL／同步程式衝突、T15 大型資料實測與完整跨機驗收仍待完成。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

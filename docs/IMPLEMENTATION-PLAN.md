@@ -45,6 +45,8 @@ uaml recover
 uaml validate
 uaml vault register <path>
 uaml vault relocate <vault-id> <new-path>
+uaml vault compare [--knowledge]
+uaml vault select <path> --expect-comparison <hash> [--knowledge]
 uaml project init --vault <vault-id>
 uaml project trust
 uaml project fork
@@ -55,7 +57,7 @@ uaml knowledge apply <proposal>
 uaml repair
 ```
 
-目前已實作 doctor、resolve、recover、validate、checkpoint、vault register/relocate、project init/trust/fork、vault init、repair 預覽／補完及 knowledge add/get/search/propose/apply。doctor/resolve/recover/validate 和 repair 預覽唯讀；repair/fork apply 必須核對 plan_hash。Knowledge 子樹需明確 read/write grant；propose 僅寫本機提案，apply 才修改 Vault。操作見 [INSTALL](../INSTALL.md)。
+目前已實作 doctor、resolve、recover、validate、checkpoint、vault register/relocate/compare/select、project init/trust/fork、vault init、repair 預覽／補完及 knowledge add/get/search/propose/apply。doctor/resolve/recover/validate、vault compare 和 repair 預覽唯讀；repair/fork apply 必須核對 plan_hash。vault select 需 comparison_hash，僅更新本機權威選擇。Knowledge 子樹需明確 read/write grant；propose 僅寫本機提案，apply 才修改 Vault。操作見 [INSTALL](../INSTALL.md)。
 
 ## 開發順序
 
