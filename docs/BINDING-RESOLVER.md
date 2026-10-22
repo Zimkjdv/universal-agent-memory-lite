@@ -1,6 +1,8 @@
 # Binding Resolver、Registry 與移機
 
-狀態：Phase 3 提案。Resolver 預設唯讀，不建立 Vault、不改 ID、不修改綁定或全域設定。
+狀態：已實作雛形的唯讀解析、Registry、候選選擇、trust 與 relocate；下列為完整設計契約，未完成部分另列。Resolver 不建立 Vault、不改 ID、不修改綁定或全域設定。
+
+目前 grant 只開放 project_link 讀取，並 pin Manifest／Vault 身份檔 hash。多候選預設拒絕，--select 或 relocate 明確選定後才繼續；尚未比較所有副本內容來自動產生 REPLICA_CONFLICT。完整 WRITE_DENIED 探測、fork 新身份與 repair 命令尚未實作。記憶完整性由 recover 驗證，resolve 成功只表示 Binding 成功。
 
 ## Registry 位置與維護
 

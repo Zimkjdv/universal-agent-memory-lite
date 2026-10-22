@@ -2,10 +2,10 @@
 
 **Local-first, Markdown-first, portable memory and handoff for AI coding agents.**
 
-UAML 規劃以可攜式 Repository–Vault Binding，連結 Git 專案、專案交接記錄與本地 Obsidian 知識庫，讓 Codex、Claude Code 及未來其他 Agent 接續已持久化的開發工作。
+UAML 以可攜式 Repository–Vault Binding，連結 Git 專案、專案交接記錄與本地 Obsidian 知識庫，讓 Codex、Claude Code 及未來其他 Agent 接續已持久化的開發工作。
 
-> **目前狀態：研究與設計文件，尚無可安裝的 MVP。**
-> Phase 1–4 的研究及規格草案已整理；設計選擇仍待審核。Phase 5 尚未開始，也尚未獲得實作授權。`v0.1.0` 是預計首版，不是已發布版本。
+> **目前狀態：可本地安裝的 CLI 雛形 `0.1.0.dev0`，完整 MVP 尚未完成。**
+> 2026-10-22 已獲授權先實作 Roadmap 的部分核心項目。具備身份初始化、Registry、checkout 授權、唯讀解析／恢復及基本 checkpoint；共用知識、完整修復、Agent 適配與真實跨機驗收仍待完成。`v0.1.0` 是目標首版，不是已發布版本。
 
 ## 目標情境
 
@@ -46,8 +46,9 @@ Local-first 指 UAML 的儲存、解析與搜尋在本機進行；雲端 Agent �
 
 | 文件 | 內容 |
 | --- | --- |
-| [Roadmap](roadmap.md) | Phase 1–7、MVP 順序與批准閘門 |
+| [Roadmap](ROADMAP.MD) | Phase 1–7、MVP 順序與批准閘門 |
 | [Changelog](CHANGELOG.md) | 真正已完成的變更，與未發布狀態 |
+| [雛形安裝與試用](INSTALL.md) | 本地安裝、一次性示範、命令與已知限制 |
 | [產品需求](docs/PRODUCT-REQUIREMENTS.md) | 功能、非功能需求、範圍與非目標 |
 | [研究報告](docs/RESEARCH.md) | 固定版本的 Obsidian Mind 原始碼與官方能力研究 |
 | [架構](docs/ARCHITECTURE.md) | 權威來源、模組、Git 核對、搜尋與去重 |
@@ -62,7 +63,15 @@ Local-first 指 UAML 的儲存、解析與搜尋在本機進行；雲端 Agent �
 
 ## 安裝與使用狀態
 
-目前沒有套件、CLI、Hooks、MCP Server 或自動安裝腳本。文件中的命令與資料結構是設計提案，不可當成已可用功能。正式安裝、Codex／Claude 使用、跨機遷移與故障排除指南將隨實作及驗收完成。
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe examples/demo.py
+```
+
+示範只使用臨時 Repository／Vault。實際試用見 [INSTALL.md](INSTALL.md)。目前可用命令：`vault init/register/relocate`、`project init/trust`、`doctor`、`resolve`、`checkpoint`、`recover`，支援 JSON 與非零錯誤碼。完整規格中的其餘命令仍是提案。
+
+目前 trust 僅授予該專案反向索引的讀取範圍；沒有共用知識搜尋或 Vault 一般寫入權限。雛形沒有 Hooks、MCP Server 或背景服務，不自動修改既有 Agent 入口。
 
 「已設定後不用再輸入 Vault 路徑」是 Registry 的目標；「每次新對話完全自動恢復」另依賴 Agent 入口、權限與實機驗證。
 

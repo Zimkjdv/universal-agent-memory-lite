@@ -1,6 +1,21 @@
 # 正式驗收計畫
 
-**所有案例狀態：未執行。** UAML 尚未實作；本文件是完成判準，不是測試通過報告。上游 CI 成功不能替代本表。
+**完整端到端驗收仍未完成。** 2026-10-22 已建立並執行雛形自動測試，覆蓋下表部分程式層案例，但不將其當作全部正式驗收通過。上游 CI 成功不能替代本表。
+
+## 雛形測試範圍
+
+測試命令見 [INSTALL](../INSTALL.md)。tests/test_binding.py 覆蓋 Binding／Fork／搬遷；test_formats.py 覆蓋安全解析及 Windows junction；test_recovery.py 覆蓋保存、過時／未提交內容、中斷與不可信文字；test_git_and_storage.py 覆蓋 CLI、worktree、鎖及備份。讀取拒絕為故障注入，不能冒充完整 Windows ACL 驗收。
+
+T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge、去重、完整 repair、ACL 與所有並行案例尚未完成。
+
+### 2026-10-22 本輪驗證記錄
+
+- 執行環境回報 Windows 10 build 19045、Python 3.12.10、Git 2.42.0.windows.2、PyYAML 6.0.3；不是 Windows 11 驗收證據。
+- `python -m unittest discover -s tests -t . -v`：46 項通過，沒有 skip；包含實際 Windows junction、活子程序持鎖及 metadata 秘密遮罩案例。
+- 本地 editable 安裝成功，`pip check` 無破損依賴；CLI 版本為 0.1.0.dev0。
+- `examples/demo.py` 一次性示範通過，包含未授權拒讀、完整恢復及後續變更的 DEGRADED／STALE_MEMORY。
+- 文件本地連結與檔名大小寫、code fences、Python 語法已檢查。
+- 測試使用臨時資料，未對真實 Obsidian Vault 操作；未宣稱 Windows 11、Codex／Claude 實際接管或第二台電腦已通過。
 
 ## 共通證據
 

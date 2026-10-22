@@ -1,6 +1,8 @@
 # 資料格式草案
 
-狀態：Phase 3 設計提案，不是已實作的驗證器。以下是合成範例，不是實際使用者身份、測試或 Git 證據。
+狀態：Phase 3 設計契約，2026-10-22 已實作身份、Registry、反向索引與專案記憶的限制型驗證；Knowledge 尚未實作。以下是合成範例，不是實際使用者身份、測試或 Git 證據。
+
+雛形額外限制：每份檔案最多 256 KiB、YAML 深度最多 16、extensions 只能是空物件、專案記憶僅接受下列標準三個路徑。不支援自訂位置或未知擴充的寫入，避免擴大範圍。
 
 ## 共通約束
 
@@ -83,24 +85,29 @@ knowledge_ids: []
   "vaults": [{
     "vault_id": "3e9d7abc-44d0-4f73-bb8b-41dc321a8281",
     "candidates": [{
-      "candidate_id": "local-copy-1",
+      "candidate_id": "c52bccf3-7ba9-4721-9de6-3ec8d8ee9101",
       "path": "D:\\Notes\\Engineering",
       "last_verified_at": "2026-10-18T01:00:00Z"
     }],
-    "selected_candidate_id": "local-copy-1"
+    "selected_candidate_id": "c52bccf3-7ba9-4721-9de6-3ec8d8ee9101"
   }],
   "checkout_grants": [{
     "repository_root": "D:\\Code\\ExampleProject",
+    "git_directory": "D:\\Code\\ExampleProject\\.git",
+    "remote_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+    "binding_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+    "vault_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
     "project_id": "0f3c12d4-9c72-4ac1-ae61-a233e8279c01",
     "vault_id": "3e9d7abc-44d0-4f73-bb8b-41dc321a8281",
     "project_memory_id": "a2177d6e-d543-46dd-9975-0c8ff81010e2",
     "access": "read",
+    "scope": "project_link",
     "approved_at": "2026-10-18T01:00:00Z"
   }]
 }
 ```
 
-此簡化範例展示定位及授權分離。正式 grant 還必須保存經核准的 Binding 重要欄位指紋、Git 位置及 Remote 提示；完整欄位在 M0 固定。候選 ID 僅在本機有意義，不建立新的邏輯 Vault 身份。grant 應包含允許讀寫的子範圍，不將整個 Vault 隱含公開。
+範例 hash 以零填充，實際由程式計算。grant 綁定 canonical checkout/Git 位置、Remote 設定 hash、Manifest 原始 hash 與 Vault 身份檔 hash；重要內容改變後重新核准，不保存可能含憑證的原始 Remote URL。候選 ID 為本機 UUID，不建立新邏輯 Vault 身份。目前 scope 固定 project_link、access 固定 read，不隱含開放 Knowledge 或一般寫入。
 
 Registry 含本機路徑，禁止提交 Git；新電腦重新註冊，而非盲目套用舊 Registry。
 
@@ -123,9 +130,10 @@ git:
   working_tree: "dirty"
   upstream: null
   remote_freshness: "unknown"
+  working_tree_fingerprint: null
 ```
 
-State 的 kind 為 project_state。branch 在 detached HEAD 可 null；head 在尚無 Commit 時可 null，讀取失敗須另報錯而非冒用 null。object_format 不硬限 SHA-1；應辨識實際 Git 格式。working_tree 為 clean/dirty/conflicted/unknown，未知須有原因。
+State 的 kind 為 project_state。branch 在 detached HEAD 可 null；head 在尚無 Commit 時可 null，讀取失敗須另報錯而非冒用 null。object_format 辨識 sha1/sha256。working_tree 為 clean/dirty/conflicted/unknown，未知須有原因。雛形增加可選 working_tree_fingerprint：排除 .uaml 與三個記憶檔，雜湊變更檔索引資訊及目前內容；遇到連結、子模組、可能憑證檔、不可讀或超出預算時為 null 並報告不完整。不把它當整個執行環境的一致性證明。
 
 Handoff 正文必備：當前任務、已完成、未完成、主要變更檔案、Git／Working Tree 快照、測試驗證、Blockers、下一步、風險與假設、未保存／無法恢復內容。無內容寫「無」，未知寫原因。
 

@@ -1,12 +1,12 @@
 # MVP 實作計畫
 
-Phase 4 提案。**本文件不是 Phase 5 授權；目前沒有執行下列命令或建立實作。**
+Phase 4 原計畫，並附 2026-10-22 雛形實作狀態。使用者已授權選取重要項目建立雛形；完整計畫仍不代表所有功能已實作。
 
 ## 建議技術
 
 Python 3.11+、Git CLI、PyYAML 作為唯一必要第三方 runtime 依賴；JSON Schema 作為規格／測試契約。Markdown 保存內容，YAML 保存 Manifest/frontmatter，JSON 保存 Registry/checkpoint/索引。實作前固定支援版本及安全解析限制，不使用不安全 yaml.load。
 
-若重視單檔執行，可改評估 Go；不建議同時維護兩套核心。語言、依賴與格式仍待批准。
+本輪採 Python／PyYAML 建立可逆的雛形，不另引入 Go 或第二套核心。正式發布支援範圍仍待驗收。
 
 ## 預計檔案
 
@@ -55,11 +55,11 @@ uaml knowledge apply <proposal>
 uaml repair
 ```
 
-以上命令尚不存在。doctor/resolve/recover/validate 預設唯讀；建立 Vault 與 init 專案是不同明確操作。repair 先提出方案，不自動清空資料。寫入命令提供預覽、明確套用與機器可讀結果；搜尋無結果不是建立筆記授權。
+目前已實作 doctor、resolve、recover、checkpoint、vault register/relocate、project init/trust，並增加明確 vault init。其餘命令未實作。doctor/resolve/recover 唯讀；初始寫入與 checkpoint 是明確操作。完整預覽／proposal／repair 流程仍在後續範圍。操作見 [INSTALL](../INSTALL.md)。
 
 ## 開發順序
 
-依 [Roadmap](../roadmap.md) 的 M0–M8。先契約、路徑/Git、Binding/Registry，再安全儲存，之後 State/Handoff、知識與適配。安全寫入不能留到最後才補。每個出口依對應測試證據判定，不以檔案數或實作宣告當成完成。
+依 [Roadmap](../ROADMAP.MD) 的 M0–M8。先契約、路徑/Git、Binding/Registry，再安全儲存，之後 State/Handoff、知識與適配。安全寫入不能留到最後才補。每個出口依對應測試證據判定，不以檔案數或實作宣告當成完成。
 
 ## 測試策略
 
