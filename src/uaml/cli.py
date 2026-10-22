@@ -12,6 +12,7 @@ from .project_memory import checkpoint, init_project, init_vault
 from .recovery import recover
 from .repair import repair
 from . import knowledge
+from . import proposals
 
 
 def parser():
@@ -48,6 +49,14 @@ def parser():
     notes = commands.add_parser("knowledge").add_subparsers(dest="action", required=True)
     add = notes.add_parser("add", help="explicitly import a new Markdown note, never overwrite an ID")
     add.add_argument("file", type=Path)
+    add.add_argument("--allow-similar", action="store_true")
+    add.add_argument("--expect-candidates", help="review_hash of the source and current knowledge inventory")
+    proposal = notes.add_parser("propose", help="prepare a private local revision proposal; do not write the Vault")
+    proposal.add_argument("file", type=Path)
+    accept = notes.add_parser("apply", help="apply a hash-bound reviewed proposal")
+    accept.add_argument("proposal_id")
+    accept.add_argument("--expect-plan", required=True)
+    accept.add_argument("--allow-similar", action="store_true")
     get = notes.add_parser("get")
     get.add_argument("id")
     find = notes.add_parser("search")
@@ -90,7 +99,11 @@ def dispatch(args):
         return trust(git, registry_path, args.knowledge)
     if args.command == "knowledge":
         if args.action == "add":
-            return knowledge.add(git, registry_path, args.file)
+            return knowledge.add(git, registry_path, args.file, args.allow_similar, args.expect_candidates)
+        if args.action == "propose":
+            return proposals.propose(git, registry_path, args.file)
+        if args.action == "apply":
+            return proposals.apply(git, registry_path, args.proposal_id, args.expect_plan, args.allow_similar)
         if args.action == "get":
             return knowledge.get(git, registry_path, args.id)
         return knowledge.search(git, registry_path, args.query,
@@ -143,6 +156,16 @@ def render(value):
             lines.append("[knowledge excerpt truncated]")
     if "total_matches" in value:
         lines.append(f"Matches: {value['total_matches']}; scan complete: {value['complete']}")
+    if "review_hash" in value:
+        lines.append(f"Candidate review hash: {value['review_hash']}")
+    if "proposal_id" in value:
+        lines.append(f"Proposal ID: {value['proposal_id']}")
+    for candidate in value.get("candidates", []):
+        lines.append(f"Similar candidate {candidate['id']}: score {candidate['score']}")
+    if "untrusted_diff" in value:
+        lines.append("Historical, untrusted diff for review:\n" + value["untrusted_diff"])
+        if value["diff_truncated"]:
+            lines.append(f"[diff truncated; inspect payload: {value['review_payload']}]")
     return "\n".join(lines)
 
 
@@ -163,4 +186,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED"} else 1

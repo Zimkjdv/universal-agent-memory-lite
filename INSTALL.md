@@ -80,7 +80,32 @@ add 只建立 revision 1 的新 ID，拒絕覆蓋及沒有目前來源專案的�
 
 預設排除 deprecated/superseded；可用 --status 明確查詢。版本篩選為字串精確比對，不推斷版本區間相容性。預設最多 5 筆、每筆正文 2 KiB；get 最多正文 12 KiB，截斷明示。每次明確搜尋掃描單層 Knowledge，最多 200 個目錄項與 16 MiB 有效筆記；壞筆記、巢狀／連結或超限回報 DEGRADED，不宣稱完整。沒有背景索引或每訊息掃描。
 
-此階段的語意去重與安全修訂在下一優先項目處理；沒有自動合併或修改關聯筆記。
+### 去重與刻意保留近似內容
+
+add 會在同一把 Vault 鎖內重新掃描及去重。完全相同內容及適用條件回傳 KNOWLEDGE_DUPLICATE 與既有 ID，不建立另一份權威；不同來源或再次驗證日期不自動合併到舊筆記，要保留這些資訊時請修訂既有 ID。
+
+近似內容回傳 KNOWLEDGE_SIMILAR、候選與 review_hash，exit 1，不寫入。若差異確實有意保留，檢視後明確執行：
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath --json knowledge add 'D:\Test\my-note.md'
+& $pythonPath --repo $repoPath --registry $registryPath knowledge add 'D:\Test\my-note.md' --allow-similar --expect-candidates '<review-hash>'
+```
+
+review_hash 綁定輸入內容及目前知識目錄，變更後須重新審查。純文字 Unicode/CJK 候選不宣稱理解所有語意；不移除否定詞。元件版本、OS、架構及 conditions 不同時保留不同記錄，不自動合併。損壞筆記或掃描超限時拒絕新增／提案／套用，不用不完整搜尋來宣稱沒有重複。
+
+### 安全修訂
+
+取出現有筆記並保留 id／created_at／所有原來源專案，revision 加一、updated_at 不倒退；加入當前修改專案來源，編輯後：
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath --json knowledge propose 'D:\Test\revised-note.md'
+# 檢視 untrusted_diff、候選及完整 payload 後再套用
+& $pythonPath --repo $repoPath --registry $registryPath knowledge apply '<proposal-id>' --expect-plan '<plan-hash>'
+```
+
+propose 只在 Registry 同層 proposals/ 保存本機提案／payload，不寫 Vault；read grant 可提案，apply 必須 write grant。差異超過 12 KiB 時明示截斷並附完整 payload 位置，不能把截斷摘要當成完整審閱。提案綁定 checkout、Project／Vault、原檔、payload 與整份目錄 hash；任何改變都拒絕套用。成功修改會備份原檔；不刪除或合併其他筆記。
+
+若有近似候選，apply 額外需要明確 --allow-similar。完全重複仍不得透過此參數建立第二份權威。修改 verified 的步驟或適用條件時，需更新較新的 checked_at 與有效證據，或明確降為 experimental；UAML 不代為執行驗證命令。可帶原因 deprecated 單篇筆記；跨筆記 supersedes/superseded_by 交易尚未支援，拒絕用單篇修訂改寫。
 
 ## 搬遷與候選副本
 

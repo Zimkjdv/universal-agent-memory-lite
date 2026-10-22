@@ -7,7 +7,7 @@ from pathlib import Path
 from . import registry
 from .binding import load_project, resolve
 from .errors import UamlError
-from .formats import (base, digest, fields, frontmatter, identifier, read_bytes,
+from .formats import (base, digest, fields, frontmatter, identifier, json_bytes, read_bytes,
                       safe_metadata, string, timestamp)
 from .paths import inside
 from .storage import lock, write
@@ -116,7 +116,7 @@ def scan(root: Path):
             path = inside(root, entry.name)
             if not entry.is_file(follow_symlinks=False):
                 raise UamlError("UNSAFE_PATH", "Nested directories or linked notes require manual review.")
-            if not entry.name.endswith(".md"):
+            if not entry.name.lower().endswith(".md"):
                 continue
             note = record(path)
             total_bytes += len(note["raw"])
@@ -130,7 +130,7 @@ def scan(root: Path):
     return records, diagnostics, not diagnostics
 
 
-def add(git, registry_path: Path, source: Path):
+def add(git, registry_path: Path, source: Path, allow_similar=False, expected_candidates=None):
     manifest, vault_path, root = authorize(git, registry_path, True)
     raw = read_bytes(source)
     header, _ = validate(raw)
@@ -143,6 +143,26 @@ def add(git, registry_path: Path, source: Path):
         _, current_vault, current_root = authorize(git, registry_path, True)
         if current_root != root or current_vault != vault_path:
             raise UamlError("WRITE_CONFLICT", "Vault selection changed during import.")
+        target = inside(root, f"{header['id']}.md")
+        if target.exists():
+            existing = record(target)
+            if existing["sha256"] == digest(raw):
+                return {"status": "KNOWLEDGE_DUPLICATE", "id": header["id"], "sha256": existing["sha256"]}
+            raise UamlError("WRITE_CONFLICT", "This ID exists; use knowledge propose for a reviewed revision.")
+        notes, diagnostics, complete = scan(root)
+        if not complete:
+            raise UamlError("SCAN_INCOMPLETE", "Cannot rule out duplicates; resolve scan errors before adding.")
+        from .dedup import candidates, catalog_hash
+        found = candidates(header, validate(raw)[1], notes)
+        if found["exact"]:
+            return {"status": "KNOWLEDGE_DUPLICATE", **found["exact"][0],
+                    "next_step": "Use the existing ID; propose a revision to record new sources or verification dates."}
+        review_hash = digest(json_bytes({"source": digest(raw), "catalog": catalog_hash(notes)}))
+        if found["similar"] and not allow_similar:
+            return {"status": "KNOWLEDGE_SIMILAR", "candidates": found["similar"], "review_hash": review_hash,
+                    "next_step": "Review conditions and differences; explicit --allow-similar --expect-candidates is required to keep a separate note."}
+        if found["similar"] and expected_candidates != review_hash:
+            raise UamlError("WRITE_CONFLICT", "Candidate review changed or is missing; review again.")
         write(inside(root, f"{header['id']}.md"), raw, None)
     return {"status": "KNOWLEDGE_ADDED", "id": header["id"], "sha256": digest(raw), "revision": 1}
 

@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-22：優先項目 3
+
+- 新增時精確去重；相同環境的 Unicode/CJK 近似候選僅提議，需 review_hash 與明確保留旗標。
+- 版本、OS、架構、前置條件先分組，保留否定詞，不自動合併不同條件記錄。
+- knowledge propose/apply：本機提案、差異、payload hash、原檔 hash、整份目錄 hash、checkout／Vault 核對與原內容備份。
+- 修訂必須保留來源／建立時間並遞增 revision；步驟或環境變更不能沿用 verified 舊驗證時間。
+- 中文／否定／版本、雙程序重複新增、提案過時／竄改、手動修改與 CLI 測試。
+
 ### Added — 2026-10-22：優先項目 2
 
 - knowledge add/get/search、單層有界 Unicode 檢索、環境與精確版本篩選。

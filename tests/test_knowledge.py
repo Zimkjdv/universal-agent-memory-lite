@@ -104,15 +104,16 @@ class KnowledgeTests(KnowledgeWorkspace):
     def test_corrupt_notes_degrade_instead_of_hiding_missing_results(self):
         header, body = self.note()
         add(self.git, self.registry, self.source(header, body))
-        (self.vault / "UAML/Knowledge/broken.md").write_text("not frontmatter", encoding="utf-8")
+        (self.vault / "UAML/Knowledge/broken.MD").write_text("not frontmatter", encoding="utf-8")
         result = search(self.git, self.registry, "安裝")
         self.assertEqual(result["status"], "DEGRADED")
         self.assertFalse(result["complete"])
         self.assertEqual(len(result["results"]), 1)
 
     def test_scan_budget_is_explicit_and_bounded(self):
-        for i in range(3):
-            header, body = self.note(title=f"Python case {i}")
+        bodies = ["# Apple\nFruit orchard harvest.", "# Boats\nSailing river harbour.", "# Stars\nGalaxy lunar telescope."]
+        for i, unique_body in enumerate(bodies):
+            header, body = self.note(title=f"Python case {i}", body=unique_body)
             add(self.git, self.registry, self.source(header, body))
         with patch("uaml.knowledge.MAX_FILES", 2):
             result = search(self.git, self.registry, "Python")

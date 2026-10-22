@@ -67,6 +67,12 @@ Registry／備份限制目前使用者，不放寬 ACL。備份舊內容前同�
 | Prompt injection | 資料與指令分離，工具不執行筆記 |
 | 過度自動化 | 事件驅動、有界讀取、無常駐服務 |
 
+## 知識修訂提案
+
+單篇 propose 的 payload 與 JSON 在本機 Registry 同層保存，不向 Vault 發布。plan_hash 綁定提案，提案再綁定輸入、原檔、知識目錄與 Project／Vault context。apply 在合作鎖內重新檢查授權及所有 hash；目錄中即使是不相關筆記改變，也保守要求重新提案。原檔備份後單檔替換，不修改其他筆記或移除歷史。這不提供非合作程序或跨機同步的全面隔離。
+
+精確去重會回傳既有 ID，不自動合併來源或新驗證日期；近似候選需要額外明確保留。只有完整的授權範圍掃描才可新增／修訂。verified 內容或環境變更要求新驗證時間與證據，或明確降級；資料驗證不是實際重跑技術步驟。
+
 ## 必要驗證
 
 Windows ACL、junction/symlink、檔案佔用、鎖持有、並行寫入、半完成 checkpoint、手動修改後復原、惡意筆記與假 Token、未知 Schema。完整案例見 [驗收計畫](ACCEPTANCE-TESTS.md)。

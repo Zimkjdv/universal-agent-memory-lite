@@ -12,6 +12,8 @@
 
 使用者已明確要求繼續三項優先工作並逐項 Commit／Push。第一項已加入 checkpoint repair；第二項採用 Knowledge 的嚴格 Schema 與單層有界文字搜尋，不新增索引依賴。知識存取預設 none，由 trust --knowledge 明確設定 read/write；write 仍只限 Knowledge 子樹。這不代表 Agent 自動適配或完整 MVP 已完成。
 
+第三項已採用 D08 的精確去重與近似只提案，以及單篇 propose/apply、原檔／payload／目錄 hash 與備份。D11 已實作資料層驗證與修訂 freshness 檢查，不宣稱驗證技術解法本身。D09 Agent 自動適配、D12 全面效能驗收及跨筆記 supersession 仍待後續；32 KiB 全報告預算尚未完成。
+
 ## 已確認的產品邊界
 
 - 正式名稱 Universal Agent Memory Lite（UAML），首版目標 v0.1.0，無舊版相容要求。
