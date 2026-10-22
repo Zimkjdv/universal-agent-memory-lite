@@ -45,6 +45,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 2026-10-22：完整 137 項測試通過。新增 10 案例，實測 8 KiB／32 KiB 的 UTF-8 JSON（包含實際 stdout 與換行）、Unicode／跳脫、大量 Git 變更省略數、晚於長篇歷史的 Blockers／下一步、fenced 假標題、唯讀／零知識掃描、缺失綁定及 Vault／checkpoint 診斷；既有完整 recover 介面保持。這是輸出上限證據，不替代 T15 真實 Agent Token／大型資料 I/O／耗時測量。
 
+### 第三輪項目 2：Agent 最小適配入口
+
+2026-10-22：完整 147 項測試通過。新增 10 案例，覆蓋未授權時預覽零 Vault 讀取、套用只增指定檔、既有規範／Registry／Vault／工作成果不變、同內容冪等、不同內容整批拒絕、Remote／計畫變更、活鎖、中斷重預覽補建、無本機路徑、單一共用流程及 CLI。Codex→Claude→Codex 名稱透過共用 checkpoint／recover 格式驗證，僅為程式層契約，T01/T02 的真實 Agent 對話尚未執行。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

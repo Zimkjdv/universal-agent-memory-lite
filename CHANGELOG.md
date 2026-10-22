@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-22：第三輪優先項目 2
+
+- adapter --agent codex/claude-code/all 預覽完整檔案；--apply --expect-plan 才建立獨立 Markdown 手動入口。
+- 一份 WORKFLOW 共用恢復、核對、降級及事件驅動保存流程，Agent 入口只指定名稱與觸發條件。
+- 目標／身份／模板 hash 與合作鎖防護，不同內容整批拒絕、相同檔保留；不修改既有規範、全域設定或權限。
+- Codex／Claude 新對話指南、人工選配引用與實機驗收邊界。
+
 ### Added — 2026-10-22：第三輪優先項目 1
 
 - recover --compact：預設 32 KiB、可調 8–64 KiB 的 UTF-8 JSON 輸出上限，包含排版與換行。

@@ -183,6 +183,8 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 
 --knowledge 必須有 read/write grant，否則回報拒絕，不擴權。檢查範圍限 Knowledge 子樹與本專案反向索引，檢查引用、supersession 正反關係及循環。掃描不完整時不宣稱關聯有效。VALIDATED exit 0；VALIDATION_ISSUES exit 1。有效格式不是對歷史敘述或技術解法正確性的認證。
 
+適配入口以 `adapter --agent codex/claude-code/all` 預覽，再加 --apply --expect-plan 套用；命令中的斜線表示三個選項擇一。操作與啟用方式見 [Codex／Claude 接管指南](docs/AGENT-GUIDE.md)。建立入口不代表已設定原生自動載入。
+
 ## 開發驗證
 
 ```powershell

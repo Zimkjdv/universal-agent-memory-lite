@@ -1,6 +1,6 @@
 # 架構設計
 
-狀態：Phase 3 整體設計；2026-10-22 已實作身份／解析／Repo 保存恢復、checkpoint 補完、明確授權 Knowledge 新增／讀取／有界搜尋、精確／近似去重及單篇提案修訂。Agent 自動適配與跨筆記生命週期交易仍是計畫。資料欄位見 [Schema](DATA-SCHEMAS.md)，解析見 [Resolver](BINDING-RESOLVER.md)。
+狀態：Phase 3 整體設計；2026-10-22 已實作身份／解析／Repo 保存恢復、checkpoint 補完、明確授權 Knowledge 新增／讀取／有界搜尋、精確／近似去重及單篇提案修訂。Agent 獨立手動入口已實作；原生自動載入與跨筆記生命週期交易仍是計畫。資料欄位見 [Schema](DATA-SCHEMAS.md)，解析見 [Resolver](BINDING-RESOLVER.md)。
 
 ## 權威來源
 
@@ -113,6 +113,8 @@ Vault/
 精確內容正規化只處理明確無語意差異（例如換行）；不移除版本、否定詞或任意標點來決定自動去重。新增的最終檢查在共同鎖內執行，避免並行建立同樣知識。
 
 ## Agent 適配
+
+已實作 adapters.py 的預覽／明確套用：.uaml/adapters/WORKFLOW.md 保存一份 UAML 流程，CODEX.md／CLAUDE-CODE.md 是條件式指標。預覽不讀 Vault；套用只建立缺失檔，已有不同內容拒絕覆蓋，計畫綁定當前 Manifest／Git／目標 hash。無自動 native 設定、全域設定或權限變更。啟用與人工選配引用見 [接管指南](AGENT-GUIDE.md)。
 
 手動「恢復此專案」為必備。經批准可加入短的專案入口引用；Skills／Hooks 選配。不得複製兩套開發規範，或用 AGENTS.override.md 壓過既有規則。依實際 Claude 版本及 CLAUDE.md 載入情況決定薄適配。
 

@@ -43,6 +43,7 @@ uaml doctor
 uaml resolve
 uaml recover
 uaml recover --compact [--max-bytes 32768]
+uaml adapter --agent all [--apply --expect-plan <hash>]
 uaml validate
 uaml vault register <path>
 uaml vault relocate <vault-id> <new-path>

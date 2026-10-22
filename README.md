@@ -49,6 +49,7 @@ Local-first 指 UAML 的儲存、解析與搜尋在本機進行；雲端 Agent �
 | [Roadmap](ROADMAP.MD) | Phase 1–7、MVP 順序與批准閘門 |
 | [Changelog](CHANGELOG.md) | 真正已完成的變更，與未發布狀態 |
 | [雛形安裝與試用](INSTALL.md) | 本地安裝、一次性示範、命令與已知限制 |
+| [Codex／Claude 接管指南](docs/AGENT-GUIDE.md) | 最小適配入口、手動啟用、新對話及雙向交接 |
 | [產品需求](docs/PRODUCT-REQUIREMENTS.md) | 功能、非功能需求、範圍與非目標 |
 | [研究報告](docs/RESEARCH.md) | 固定版本的 Obsidian Mind 原始碼與官方能力研究 |
 | [架構](docs/ARCHITECTURE.md) | 權威來源、模組、Git 核對、搜尋與去重 |
@@ -82,6 +83,8 @@ trust 預設只授予該專案反向索引讀取；明確使用 `project trust -
 「已設定後不用再輸入 Vault 路徑」是 Registry 的目標；「每次新對話完全自動恢復」另依賴 Agent 入口、權限與實機驗證。
 
 `recover --compact` 提供預設最多 32 KiB 的 JSON 接管證據，保留來源與診斷，優先任務／Blockers／下一步，並明示所有截斷。需要完整資料時依來源檔案與 hash 核對；一般 recover 的介面保持原樣。
+
+`adapter --agent all` 預覽 Codex／Claude 的獨立手動入口，`--apply --expect-plan` 才建立檔案；兩者共用一份流程，不修改既有 Agent 規範或全域設定。詳見接管指南；真實 Agent 自動載入與雙向對話驗收仍未完成。
 
 ## 授權與研究來源
 

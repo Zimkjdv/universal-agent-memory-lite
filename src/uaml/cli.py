@@ -17,6 +17,7 @@ from .validation import validate
 from . import forking
 from . import replicas
 from . import context
+from . import adapters
 
 
 def parser():
@@ -31,6 +32,10 @@ def parser():
     recovery = commands.add_parser("recover")
     recovery.add_argument("--compact", action="store_true", help="bounded JSON evidence for agent handoff")
     recovery.add_argument("--max-bytes", type=int, help="compact UTF-8 output budget, 8192..65536 (default 32768)")
+    adapter = commands.add_parser("adapter", help="preview/install independent manual agent entry files")
+    adapter.add_argument("--agent", choices=("codex", "claude-code", "all"), required=True)
+    adapter.add_argument("--apply", action="store_true")
+    adapter.add_argument("--expect-plan")
     verify = commands.add_parser("validate", help="read-only binding, memory, checkpoint and optional knowledge checks")
     verify.add_argument("--knowledge", action="store_true", help="include the explicitly authorized knowledge area")
     save = commands.add_parser("checkpoint", help="save current repo Markdown and a fresh Git snapshot")
@@ -119,6 +124,12 @@ def dispatch(args):
         if args.compact:
             return context.recover_context(git, registry_path, args.max_bytes if args.max_bytes is not None else context.DEFAULT_BUDGET)
         return recover(git, registry_path)
+    if args.command == "adapter":
+        if args.apply:
+            return adapters.install(git, args.agent, args.expect_plan)
+        if args.expect_plan:
+            raise UamlError("COMMAND_INVALID", "--expect-plan requires --apply.")
+        return adapters.preview(git, args.agent)
     if args.command == "validate":
         return validate(git, registry_path, args.knowledge)
     if args.command == "checkpoint":
@@ -191,6 +202,11 @@ def render(value):
         lines.append(f"Plan hash: {value['plan_hash']}")
         for action in value.get("actions", []):
             lines.append(f"  {action['action']}: {action['path']}")
+    if "activation" in value:
+        for agent, prompt in value["activation"]["prompts"].items():
+            lines.append(f"Manual activation ({agent}): {prompt}")
+        for path, content in value["files"].items():
+            lines.extend([f"\n--- Adapter preview: {path} ---", content])
     notes = value.get("results", []) or ([value] if "untrusted_markdown" in value else [])
     for note in notes:
         lines.extend([f"\nKnowledge {note['id']} [{note['metadata']['status']}]: {note['metadata']['title']}",
@@ -241,4 +257,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace", newline="\n")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED", "ADAPTER_PREVIEW", "ADAPTER_INSTALLED", "ADAPTER_ALREADY_INSTALLED"} else 1

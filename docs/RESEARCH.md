@@ -4,6 +4,8 @@
 
 ## 證據範圍
 
+補充核對（2026-10-22）：[Codex 官方入口](https://learn.chatgpt.com/docs/agent-configuration/agents-md) 說明 AGENTS.md 探索；[Claude 官方記憶文件](https://code.claude.com/docs/en/memory) 說明 CLAUDE.md 匯入及依版本／設定而異的 AGENTS.md 支援。因此 UAML 先提供獨立手動入口及人工選配引用，避免修改原生設定或假定所有版本自動載入。這次核對官方文件，沒有執行真實新對話；初次研究日期與固定上游版本保持原樣。
+
 Obsidian Mind 固定於 Commit [`fae7be467fc5e23bf9d51df7207d41f0c07e2754`](https://github.com/breferrari/obsidian-mind/commit/fae7be467fc5e23bf9d51df7207d41f0c07e2754)，提交時間台北 2026-10-18 07:34，manifest 宣告 10.0.0。
 
 研究已閱讀文件、關鍵原始碼、部分測試程式碼，並核對上游 CI。沒有執行上游安裝、初始化或本機測試，沒有對真實 Vault 寫入。
