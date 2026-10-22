@@ -69,11 +69,13 @@ python -m venv .venv
 .\.venv\Scripts\python.exe examples/demo.py
 ```
 
-示範只使用臨時 Repository／Vault。實際試用見 [INSTALL.md](INSTALL.md)。目前可用命令：`vault init/register/relocate`、`project init/trust`、`doctor`、`resolve`、`validate`、`checkpoint`、`recover`、`repair`，支援 JSON 與非零錯誤碼。validate 預設唯讀，--knowledge 額外檢查已授權的知識關聯；repair 套用需明確提供預覽 plan_hash。完整規格中的其餘命令仍是提案。
+示範只使用臨時 Repository／Vault。實際試用見 [INSTALL.md](INSTALL.md)。目前可用命令：`vault init/register/relocate`、`project init/trust/fork`、`doctor`、`resolve`、`validate`、`checkpoint`、`recover`、`repair`，支援 JSON 與非零錯誤碼。validate 預設唯讀，--knowledge 額外檢查已授權的知識關聯；repair 與 fork 套用需明確提供預覽 plan_hash。完整規格中的其餘命令仍是提案。
 
 trust 預設只授予該專案反向索引讀取；明確使用 `project trust --knowledge read/write` 才開放綁定的 Knowledge 子樹。可用 `knowledge add/search/get` 保存及查詢有來源、適用環境與驗證資訊的 Markdown；不授權 Vault 其他區域。雛形沒有 Hooks、MCP Server 或背景服務，不自動修改既有 Agent 入口。
 
 完全重複會回傳既有 ID；近似內容需審查後明確保留，版本與環境差異不自動合併。修改筆記先使用 `knowledge propose` 檢視差異，再以 `knowledge apply --expect-plan` 套用；若來源、Vault、目標或知識目錄改變，需重新提案。
+
+獨立 Fork 必須明確指定目標 Vault。流程建立新 Project／Memory ID 與空白狀態，舊記憶只在本機封存，不自動讀取來源 Vault、不搬移私人知識、不繼承 checkout 授權。它不修改 Git Remote 或自動 Commit。
 
 「已設定後不用再輸入 Vault 路徑」是 Registry 的目標；「每次新對話完全自動恢復」另依賴 Agent 入口、權限與實機驗證。
 

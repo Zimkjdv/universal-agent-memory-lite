@@ -158,3 +158,22 @@ ID 必須相同，不改 Repo Manifest。保留舊候選紀錄並明確選定新
 ```
 
 使用標準函式庫 unittest，測試建立臨時 Repo／Vault；沒有 pytest、MCP、QMD 或背景服務依賴。正式十六項驗收的進度與尚未驗證部分見 [驗收計畫](docs/ACCEPTANCE-TESTS.md)。
+
+## 獨立 Fork 身份
+
+先取得 Fork 的本地 Repository，註冊明確選定的目標 Vault。工具不推斷同一 ID 是否代表合作 Fork 或獨立專案；獨立流程才使用此命令：
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath --json project fork --name 'Independent Project' --vault '<target-vault-id>'
+# 審閱新 IDs、actions 與 plan_hash；計畫在本機 forks/ 保存
+& $pythonPath --repo $repoPath --registry $registryPath --json project fork --proposal '<fork-id>'
+& $pythonPath --repo $repoPath --registry $registryPath --json project fork --proposal '<fork-id>' --apply --expect-plan '<plan-hash>'
+# 確認新 .uaml/project.yaml 與新反向索引後，再核准新身份
+& $pythonPath --repo $repoPath --registry $registryPath project trust
+```
+
+預覽不修改 Repo／Vault，只在 Registry 同層 forks/ 保存原四檔與新 payload。apply 明確替換 PROJECT-STATE.md、HANDOFF.md、checkpoint.json 與 .uaml/project.yaml，原內容保留本機封存及備份；新狀態是空白模板，不把舊進度當新事實。Git 程式碼、staged／unstaged 成果與 Agent 規範不變，來源 Repo／Vault 反向索引不修改。目標 Vault 必須明確提供，甚至來源 Vault 離線也能為另一個目標建立獨立身份。
+
+apply 先檢查全部身份／payload／目前 hash，在 Repo＋Vault 合作鎖內撤銷本 checkout 舊 grant，建立空白新反向索引，再替換記憶，Manifest 最後切換。中斷後可用同一 proposal 再預覽／套用；只接受精確 before 或 after，人工修改後拒絕覆蓋。完成後重複 apply 是 no-op，不撤銷後來核准的新 grant。
+
+Fork 不會設定新 Remote、不會自動取得 Knowledge 權限或複製私人知識；若為同專案協作用 Fork，應保留身份並另行明確 trust，而非執行獨立流程。跨檔／跨位置操作不宣稱分散式原子交易；遺留活鎖不得自動搶走。

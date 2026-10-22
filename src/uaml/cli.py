@@ -14,6 +14,7 @@ from .repair import repair
 from . import knowledge
 from . import proposals
 from .validation import validate
+from . import forking
 
 
 def parser():
@@ -49,6 +50,12 @@ def parser():
     init.add_argument("--name", required=True)
     approve = projects.add_parser("trust", help="approve this checkout; knowledge is disabled unless explicitly requested")
     approve.add_argument("--knowledge", choices=("none", "read", "write"), default="none")
+    independent = projects.add_parser("fork", help="preview a new independent identity; never inherit old Vault grants")
+    independent.add_argument("--name")
+    independent.add_argument("--vault", dest="vault_id", help="explicit target Vault ID, never inferred")
+    independent.add_argument("--proposal", help="inspect or resume an existing fork plan UUID")
+    independent.add_argument("--apply", action="store_true")
+    independent.add_argument("--expect-plan")
     notes = commands.add_parser("knowledge").add_subparsers(dest="action", required=True)
     add = notes.add_parser("add", help="explicitly import a new Markdown note, never overwrite an ID")
     add.add_argument("file", type=Path)
@@ -101,6 +108,16 @@ def dispatch(args):
     if args.command == "project":
         if args.action == "init":
             return init_project(git, registry_path, args.vault_id, args.name)
+        if args.action == "fork":
+            if args.proposal:
+                if args.name or args.vault_id:
+                    raise UamlError("COMMAND_INVALID", "Use either a prepared proposal or new name/target, not both.")
+                if args.apply:
+                    return forking.apply(git, registry_path, args.proposal, args.expect_plan)
+                return forking.inspect(git, registry_path, args.proposal)[0]
+            if args.apply or args.expect_plan or not args.name or not args.vault_id:
+                raise UamlError("COMMAND_INVALID", "First preview with --name and --vault; then apply its --proposal and --expect-plan.")
+            return forking.prepare(git, registry_path, args.name, args.vault_id)
         return trust(git, registry_path, args.knowledge)
     if args.command == "knowledge":
         if args.action == "add":
@@ -167,6 +184,8 @@ def render(value):
         lines.append(f"Candidate review hash: {value['review_hash']}")
     if "proposal_id" in value:
         lines.append(f"Proposal ID: {value['proposal_id']}")
+    if "fork_id" in value:
+        lines.append(f"Fork plan: {value['fork_id']}; project ID: {value['project']['id']}")
     for candidate in value.get("candidates", []):
         lines.append(f"Similar candidate {candidate['id']}: score {candidate['score']}")
     if "untrusted_diff" in value:
@@ -193,4 +212,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED"} else 1

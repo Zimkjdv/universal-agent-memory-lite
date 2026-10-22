@@ -33,6 +33,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 2026-10-22：完整自動測試 101 項通過。新增 11 案例，覆蓋唯讀／不隱含掃描知識、章節缺失／重複／空白、程式碼區塊假標題、部分損壞、checkpoint／Git 過時、知識授權、缺失引用、supersession 正反關聯／循環及 CLI exit code。這是格式與完整性證據，不是技術內容正確性或完整實機驗收。
 
+### 第二輪項目 2：獨立 Fork 身份
+
+2026-10-22：完整自動測試 113 項通過。新增 12 案例，涵蓋新 IDs／空白記憶／重新授權、Repo／Vault 預覽無變更、來源 Vault 離線且零讀取、原 Repo／索引不變、staged／unstaged 與 Agent 規範保留、人工變更／payload／Remote 衝突、目標明確性、中斷續做、原檔封存及 CLI。T16 的實際 GitHub Fork／跨機與所有外部編輯競態仍待驗收。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

@@ -181,6 +181,12 @@ verified 必須有適用環境、時間與證據；變更步驟或適用條件�
 
 已實作的 components 是 `{name, version}` 物件列表，名稱不重複；applicability 可選 conditions 字串列表。verification.evidence 是 `{method, result, source?}` 物件列表，checked_at 帶時區。deprecated 額外要求 deprecation_reason；superseded 要求 superseded_by UUID。新增匯入只接受 active 狀態、revision=1、目前 Project 為 source，禁止用 supersedes 改寫其他筆記生命週期；跨筆記 supersession 一致性交易留待後續實作。
 
+## 本機獨立 Fork 計畫 v1
+
+`forks/<fork-id>.json`：schema_version=1、kind=project_fork、id、git_identity、target_vault_id、target_vault_path、vault_hash、source_project_id、link_hash、entries。每個 entry 為標準四檔之一，順序為 State、Handoff、checkpoint、Manifest，保存 path／before_hash／after_hash；相同索引的 before/after 檔與 link payload 必須匹配。所有原內容封存在本機，不提交 Git。
+
+計畫要求新的 Project／Memory ID；新反向索引 knowledge_ids 必須為空。套用只接受目標目前 hash 為 before 或 after，最後切換 Manifest，可用同一計畫續做。它不自動匯入舊狀態、Canonical URL、私人知識或 checkout grant；不將 ID 視為授權。
+
 ## 本機知識提案 v1
 
 `proposals/<proposal-id>.json`：schema_version=1、kind=knowledge_proposal、id、knowledge_id、context、before_hash（新增為 null）、after_hash、catalog_hash、similar。相同 ID 的 `.md` 保存 after-image。context 綁定 checkout Git 身份、Manifest 與所選 Vault／Knowledge 路徑；catalog_hash 為排序後所有已驗證筆記 ID＋原始 hash。plan_hash 是 JSON 原始位元組 hash，套用前必須相符。

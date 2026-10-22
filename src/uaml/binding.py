@@ -5,6 +5,7 @@ from .errors import UamlError
 from .formats import digest, frontmatter, now, parse_yaml, project, project_link, read_bytes, text
 from .git_state import Git
 from .paths import inside, local_key, require_local_registry
+from .storage import lock
 
 
 def load_project(git: Git):
@@ -32,6 +33,12 @@ def verify_link(path, data, manifest):
 
 
 def trust(git: Git, registry_path: Path, knowledge_access="none"):
+    # Serialize approval with identity changes in project fork/checkpoint.
+    with lock(inside(git.root, ".uaml/write.lock")):
+        return _trust(git, registry_path, knowledge_access)
+
+
+def _trust(git: Git, registry_path: Path, knowledge_access="none"):
     if knowledge_access not in ("none", "read", "write"):
         raise UamlError("SCHEMA_INVALID", "Knowledge access must be none, read or write.")
     require_local_registry(registry_path, git.root)

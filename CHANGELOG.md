@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-22：第二輪優先項目 2
+
+- project fork 明確目標 Vault、私有計畫／原檔封存、hash 綁定預覽與套用。
+- 新 Project／Memory ID、空白交接與反向索引，不讀取來源 Vault 或繼承私人知識／grant。
+- 僅替換四個 UAML 管理檔；原程式碼與 Git index 保留；人工變更／Remote 變更／payload 竄改拒絕。
+- Manifest 最後切換、中斷續做及完成後冪等；trust 與身份變更使用同一 Repo 合作鎖。
+
 ### Added — 2026-10-22：第二輪優先項目 1
 
 - 唯讀 validate 與可選 --knowledge，集中回報綁定、記憶、checkpoint 與 Git 差異。
