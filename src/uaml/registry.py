@@ -45,7 +45,7 @@ def validate(value):
     roots = set()
     for grant in value["checkout_grants"]:
         fields(grant, ("repository_root", "git_directory", "remote_fingerprint", "binding_fingerprint",
-                       "vault_fingerprint", "project_id", "vault_id", "project_memory_id", "access", "scope", "approved_at"))
+                       "vault_fingerprint", "project_id", "vault_id", "project_memory_id", "access", "scope", "approved_at"), ("knowledge_access",))
         for key in ("project_id", "vault_id", "project_memory_id"):
             identifier(grant[key])
         for key in ("repository_root", "git_directory"):
@@ -60,6 +60,8 @@ def validate(value):
         root = local_key(Path(grant["repository_root"]))
         if root in roots or grant["access"] != "read" or grant["scope"] != "project_link":
             raise UamlError("SCHEMA_INVALID", "Duplicate checkout or unsupported grant scope.")
+        if grant.get("knowledge_access", "none") not in ("none", "read", "write"):
+            raise UamlError("SCHEMA_INVALID", "Invalid knowledge access grant.")
         roots.add(root)
     return value
 

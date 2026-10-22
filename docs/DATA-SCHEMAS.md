@@ -1,6 +1,6 @@
 # 資料格式草案
 
-狀態：Phase 3 設計契約，2026-10-22 已實作身份、Registry、反向索引與專案記憶的限制型驗證；Knowledge 尚未實作。以下是合成範例，不是實際使用者身份、測試或 Git 證據。
+狀態：Phase 3 設計契約，2026-10-22 已實作身份、Registry、反向索引、專案記憶與 Knowledge 的限制型驗證。以下是合成範例，不是實際使用者身份、測試或 Git 證據。
 
 雛形額外限制：每份檔案最多 256 KiB、YAML 深度最多 16、extensions 只能是空物件、專案記憶僅接受下列標準三個路徑。不支援自訂位置或未知擴充的寫入，避免擴大範圍。
 
@@ -107,7 +107,7 @@ knowledge_ids: []
 }
 ```
 
-範例 hash 以零填充，實際由程式計算。grant 綁定 canonical checkout/Git 位置、Remote 設定 hash、Manifest 原始 hash 與 Vault 身份檔 hash；重要內容改變後重新核准，不保存可能含憑證的原始 Remote URL。候選 ID 為本機 UUID，不建立新邏輯 Vault 身份。目前 scope 固定 project_link、access 固定 read，不隱含開放 Knowledge 或一般寫入。
+範例 hash 以零填充，實際由程式計算。grant 綁定 canonical checkout/Git 位置、Remote 設定 hash、Manifest 原始 hash 與 Vault 身份檔 hash；重要內容改變後重新核准，不保存可能含憑證的原始 Remote URL。候選 ID 為本機 UUID。scope 固定 project_link、access 固定 read；可選 knowledge_access 為 none/read/write，省略視為 none，只對 layout.knowledge 有效，不是整個 Vault 的授權。
 
 Registry 含本機路徑，禁止提交 Git；新電腦重新註冊，而非盲目套用舊 Registry。
 
@@ -178,3 +178,5 @@ supersedes: []
 正文包含摘要、適用條件、步驟／程式碼、驗證方法結果、限制、失敗方案、來源關聯。components 應記錄工具名稱及版本條件，未知不得推論為不限版本。
 
 verified 必須有適用環境、時間與證據；變更步驟或適用條件後重新驗證。deprecated 必須有原因；superseded 必須有替代 ID，並維持正反引用一致。專案可引用 ID＋revision/hash，辨識後續變更。空環境不表示通用適用。
+
+已實作的 components 是 `{name, version}` 物件列表，名稱不重複；applicability 可選 conditions 字串列表。verification.evidence 是 `{method, result, source?}` 物件列表，checked_at 帶時區。deprecated 額外要求 deprecation_reason；superseded 要求 superseded_by UUID。新增匯入只接受 active 狀態、revision=1、目前 Project 為 source，禁止用 supersedes 改寫其他筆記生命週期；跨筆記 supersession 一致性交易留待後續實作。

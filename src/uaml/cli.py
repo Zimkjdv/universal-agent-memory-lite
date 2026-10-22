@@ -11,6 +11,7 @@ from .paths import registry_location, require_local_registry
 from .project_memory import checkpoint, init_project, init_vault
 from .recovery import recover
 from .repair import repair
+from . import knowledge
 
 
 def parser():
@@ -42,7 +43,21 @@ def parser():
     init = projects.add_parser("init")
     init.add_argument("--vault", required=True, dest="vault_id")
     init.add_argument("--name", required=True)
-    projects.add_parser("trust", help="explicitly approve this checkout's project-link read access")
+    approve = projects.add_parser("trust", help="approve this checkout; knowledge is disabled unless explicitly requested")
+    approve.add_argument("--knowledge", choices=("none", "read", "write"), default="none")
+    notes = commands.add_parser("knowledge").add_subparsers(dest="action", required=True)
+    add = notes.add_parser("add", help="explicitly import a new Markdown note, never overwrite an ID")
+    add.add_argument("file", type=Path)
+    get = notes.add_parser("get")
+    get.add_argument("id")
+    find = notes.add_parser("search")
+    find.add_argument("query")
+    find.add_argument("--os")
+    find.add_argument("--architecture")
+    find.add_argument("--component")
+    find.add_argument("--component-version", dest="version")
+    find.add_argument("--status", choices=knowledge.STATUSES)
+    find.add_argument("--limit", type=int, default=5)
     return result
 
 
@@ -72,7 +87,15 @@ def dispatch(args):
     if args.command == "project":
         if args.action == "init":
             return init_project(git, registry_path, args.vault_id, args.name)
-        return trust(git, registry_path)
+        return trust(git, registry_path, args.knowledge)
+    if args.command == "knowledge":
+        if args.action == "add":
+            return knowledge.add(git, registry_path, args.file)
+        if args.action == "get":
+            return knowledge.get(git, registry_path, args.id)
+        return knowledge.search(git, registry_path, args.query,
+                                {key: getattr(args, key) for key in ("os", "architecture", "component", "version", "status")
+                                 if getattr(args, key)}, args.limit)
     raise UamlError("COMMAND_UNKNOWN", "Unknown command.")
 
 
@@ -109,6 +132,17 @@ def render(value):
         lines.append(f"Plan hash: {value['plan_hash']}")
         for action in value.get("actions", []):
             lines.append(f"  {action['action']}: {action['path']}")
+    notes = value.get("results", []) or ([value] if "untrusted_markdown" in value else [])
+    for note in notes:
+        lines.extend([f"\nKnowledge {note['id']} [{note['metadata']['status']}]: {note['metadata']['title']}",
+                      f"SHA-256: {note['sha256']}", str(note['metadata']['applicability']),
+                      f"Source projects: {note['metadata']['source_project_ids']}",
+                      f"Verification: {note['metadata']['verification']}",
+                      note['usage_warning'], note['untrusted_markdown']])
+        if note["truncated"]:
+            lines.append("[knowledge excerpt truncated]")
+    if "total_matches" in value:
+        lines.append(f"Matches: {value['total_matches']}; scan complete: {value['complete']}")
     return "\n".join(lines)
 
 
@@ -129,4 +163,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS"} else 1

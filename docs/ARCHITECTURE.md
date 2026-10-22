@@ -1,6 +1,6 @@
 # 架構設計
 
-狀態：Phase 3 整體設計；2026-10-22 已實作身份／解析／Repo 保存恢復子集，尚非完整最終介面。Knowledge、去重、Agent 自動適配仍是計畫。資料欄位見 [Schema](DATA-SCHEMAS.md)，解析見 [Resolver](BINDING-RESOLVER.md)。
+狀態：Phase 3 整體設計；2026-10-22 已實作身份／解析／Repo 保存恢復、checkpoint 補完，以及明確授權 Knowledge 新增／讀取／有界搜尋。去重、一般修訂與 Agent 自動適配仍是計畫。資料欄位見 [Schema](DATA-SCHEMAS.md)，解析見 [Resolver](BINDING-RESOLVER.md)。
 
 ## 權威來源
 

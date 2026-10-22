@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-22：優先項目 2
+
+- knowledge add/get/search、單層有界 Unicode 檢索、環境與精確版本篩選。
+- project trust --knowledge none/read/write，舊 grant 預設沒有知識權限。
+- Knowledge Schema、verified 證據要求、來源／適用條件／hash 輸出與合成範本。
+- 跨專案授權、唯讀搜尋、損壞與超限降級、秘密拒絕及 CLI 案例測試。
+
 ### Added — 2026-10-22：優先項目 1
 
 - checkpoint journal v2 在寫入前保存可驗證 before/after payload。

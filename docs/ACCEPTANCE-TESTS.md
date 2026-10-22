@@ -6,7 +6,7 @@
 
 測試命令見 [INSTALL](../INSTALL.md)。tests/test_binding.py 覆蓋 Binding／Fork／搬遷；test_formats.py 覆蓋安全解析及 Windows junction；test_recovery.py 覆蓋保存、過時／未提交內容、中斷與不可信文字；test_git_and_storage.py 覆蓋 CLI、worktree、鎖及備份。讀取拒絕為故障注入，不能冒充完整 Windows ACL 驗收。
 
-T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge、去重、完整 repair、ACL 與所有並行案例尚未完成。
+T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 基本 CRUD／檢索與 checkpoint 補完已有程式層證據，去重、完整生命週期、ACL 與所有並行案例仍未完成。
 
 ### 2026-10-22 本輪驗證記錄
 
@@ -20,6 +20,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge、去重、�
 ### 優先項目 1：checkpoint repair
 
 2026-10-22：完整自動測試 57 項通過。新增 11 個 repair 案例，涵蓋唯讀預覽、CLI 套用、兩個寫入中斷點、人工變更、payload／路徑竄改、精確 plan hash、鎖、舊 journal 與完成交易的後續修改。這是合成資料／故障注入證據，不代表已完成所有 T11/T12 或真實斷電驗收。
+
+### 優先項目 2：共用知識儲存與搜尋
+
+2026-10-22：完整自動測試 69 項通過。新增 12 個案例，涵蓋跨專案獨立授權、舊 grant 不擴權、read-only／撤銷、Unicode 與精確版本、來源證據、損壞／掃描超限降級、秘密拒絕、唯讀範圍及 CLI。T08 真實不同 Agent 使用前的技術核對仍未驗收。
 
 ## 共通證據
 

@@ -8,6 +8,10 @@
 
 目前僅支援標準三個 docs/memory 路徑，防止 Manifest 導向覆寫其他專案檔。D08 知識去重、D09 自動適配、D11 知識生命週期與 D12 完整效能預算仍待實作／確認；恢復正文目前每篇最多 12 KiB，明示截斷，不宣稱整份 JSON 一定低於 32 KiB。
 
+### 優先項目進展
+
+使用者已明確要求繼續三項優先工作並逐項 Commit／Push。第一項已加入 checkpoint repair；第二項採用 Knowledge 的嚴格 Schema 與單層有界文字搜尋，不新增索引依賴。知識存取預設 none，由 trust --knowledge 明確設定 read/write；write 仍只限 Knowledge 子樹。這不代表 Agent 自動適配或完整 MVP 已完成。
+
 ## 已確認的產品邊界
 
 - 正式名稱 Universal Agent Memory Lite（UAML），首版目標 v0.1.0，無舊版相容要求。

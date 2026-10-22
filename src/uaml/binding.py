@@ -31,7 +31,9 @@ def verify_link(path, data, manifest):
     return file
 
 
-def trust(git: Git, registry_path: Path):
+def trust(git: Git, registry_path: Path, knowledge_access="none"):
+    if knowledge_access not in ("none", "read", "write"):
+        raise UamlError("SCHEMA_INVALID", "Knowledge access must be none, read or write.")
     require_local_registry(registry_path, git.root)
     manifest, raw = load_project(git)
     value = registry.load(registry_path)
@@ -40,7 +42,7 @@ def trust(git: Git, registry_path: Path):
     grant = {**git.identity(), "binding_fingerprint": digest(raw),
              "vault_fingerprint": digest(read_bytes(inside(path, ".uaml/vault.yaml"))),
              "project_id": manifest["project"]["id"], **manifest["binding"],
-             "access": "read", "scope": "project_link", "approved_at": now()}
+             "access": "read", "scope": "project_link", "knowledge_access": knowledge_access, "approved_at": now()}
 
     def change(current):
         # Revalidate the selected candidate and its identity under Registry lock.
@@ -52,7 +54,7 @@ def trust(git: Git, registry_path: Path):
         current["checkout_grants"].append(grant)
 
     registry.update(registry_path, change)
-    return {"status": "TRUSTED", "project_id": manifest["project"]["id"], "access": "read", "scope": "project_link"}
+    return {"status": "TRUSTED", "project_id": manifest["project"]["id"], "access": "read", "scope": "project_link", "knowledge_access": knowledge_access}
 
 
 def resolve(git: Git, registry_path: Path):
@@ -77,7 +79,7 @@ def resolve(git: Git, registry_path: Path):
         for key in ("project_state", "handoff", "checkpoint"):
             inside(git.root, manifest["memory"][key])
         result.update(status="RESOLVED", vault_path=str(path), project_link=str(file),
-                      access={"read": True, "write": "unknown", "scope": "project_link"})
+                      access={"read": True, "write": "unknown", "scope": "project_link", "knowledge_access": grant.get("knowledge_access", "none")})
     except UamlError as exc:
         result["status"] = exc.code
         result["diagnostics"].append(exc.diagnostic())

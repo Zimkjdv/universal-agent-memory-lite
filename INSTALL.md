@@ -57,6 +57,31 @@ checkpoint 保留正文，更新時間／Agent／Git 快照、revision、snapsho
 
 recover／resolve／doctor 為唯讀，不更新 Registry 或索引。recover 輸出歷史資料、來源 hash、完整性及 Git 差異；不執行筆記內容。Vault 不可用時仍嘗試讀 Repo 記憶並回報 DEGRADED。
 
+## 共用技術知識
+
+預設 trust 只允許反向專案索引，不會自動取得知識權限。要試用時明確選擇：
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath project trust --knowledge write
+# 其他專案只需要查詢時用 --knowledge read；none 可撤銷
+```
+
+範圍只限已綁定 Vault 的 layout.knowledge，不授權整個 Vault。write 包含 read；重新執行不帶 --knowledge 的 trust 會重設為 none。
+
+複製 [知識範本](examples/knowledge-template.md)，替換 UUID、source_project_ids（目前 .uaml/project.yaml 的 project.id）、時間、環境與內容，然後：
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath knowledge add 'D:\Test\my-note.md'
+& $pythonPath --repo $repoPath --registry $registryPath knowledge search 'Python 安裝' --os windows --component python --component-version 3.12
+& $pythonPath --repo $repoPath --registry $registryPath knowledge get '<knowledge-id>'
+```
+
+add 只建立 revision 1 的新 ID，拒絕覆蓋及沒有目前來源專案的匯入。verified 必須有 OS、架構、元件版本、checked_at 和 method/result 證據；UAML 驗證資料完整性，不假裝替使用者重跑實際技術測試。跨專案查詢顯示來源、狀態、適用環境、驗證與 hash，使用前仍須核對。
+
+預設排除 deprecated/superseded；可用 --status 明確查詢。版本篩選為字串精確比對，不推斷版本區間相容性。預設最多 5 筆、每筆正文 2 KiB；get 最多正文 12 KiB，截斷明示。每次明確搜尋掃描單層 Knowledge，最多 200 個目錄項與 16 MiB 有效筆記；壞筆記、巢狀／連結或超限回報 DEGRADED，不宣稱完整。沒有背景索引或每訊息掃描。
+
+此階段的語意去重與安全修訂在下一優先項目處理；沒有自動合併或修改關聯筆記。
+
 ## 搬遷與候選副本
 
 ```powershell
