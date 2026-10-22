@@ -29,6 +29,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 2026-10-22：完整自動測試 90 項通過。新增 21 個去重／提案案例，涵蓋純中文、空 token、否定詞、環境／版本／條件差異、exact idempotence、近似明確保留、雙程序重複新增、read/write 權限、手動變更保護、payload／plan／catalog 過期拒絕、備份、revision／來源／建立時間、verified freshness、deprecation 及 CLI。額外目錄變更一律保守重提案；T09/T12 真實 Agent、所有非合作編輯與跨機並行尚未全面驗收。
 
+### 第二輪項目 1：唯讀 validate
+
+2026-10-22：完整自動測試 101 項通過。新增 11 案例，覆蓋唯讀／不隱含掃描知識、章節缺失／重複／空白、程式碼區塊假標題、部分損壞、checkpoint／Git 過時、知識授權、缺失引用、supersession 正反關聯／循環及 CLI exit code。這是格式與完整性證據，不是技術內容正確性或完整實機驗收。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

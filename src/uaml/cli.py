@@ -13,6 +13,7 @@ from .recovery import recover
 from .repair import repair
 from . import knowledge
 from . import proposals
+from .validation import validate
 
 
 def parser():
@@ -24,6 +25,8 @@ def parser():
     commands = result.add_subparsers(dest="command", required=True)
     for name in ("doctor", "resolve", "recover"):
         commands.add_parser(name)
+    verify = commands.add_parser("validate", help="read-only binding, memory, checkpoint and optional knowledge checks")
+    verify.add_argument("--knowledge", action="store_true", help="include the explicitly authorized knowledge area")
     save = commands.add_parser("checkpoint", help="save current repo Markdown and a fresh Git snapshot")
     save.add_argument("--agent", default="manual")
     fix = commands.add_parser("repair", help="preview or finish a prepared checkpoint")
@@ -89,6 +92,8 @@ def dispatch(args):
         return resolve(git, registry_path)
     if args.command == "recover":
         return recover(git, registry_path)
+    if args.command == "validate":
+        return validate(git, registry_path, args.knowledge)
     if args.command == "checkpoint":
         return checkpoint(git, registry_path, args.agent)
     if args.command == "repair":
@@ -120,6 +125,8 @@ def render(value):
         lines.append(f"Repository: {value['repository_root']}")
     for diagnostic in value.get("diagnostics", []):
         lines.append(f"[{diagnostic['code']}] {diagnostic['message']}")
+    for check in value.get("checks", []):
+        lines.append(f"Check {check['area']}: {check['status']}")
     git = value.get("git")
     if git and "snapshot" in git:
         snapshot = git["snapshot"]
@@ -186,4 +193,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED"} else 1

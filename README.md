@@ -69,7 +69,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe examples/demo.py
 ```
 
-示範只使用臨時 Repository／Vault。實際試用見 [INSTALL.md](INSTALL.md)。目前可用命令：`vault init/register/relocate`、`project init/trust`、`doctor`、`resolve`、`checkpoint`、`recover`、`repair`，支援 JSON 與非零錯誤碼。repair 預設唯讀，套用需明確提供預覽 plan_hash。完整規格中的其餘命令仍是提案。
+示範只使用臨時 Repository／Vault。實際試用見 [INSTALL.md](INSTALL.md)。目前可用命令：`vault init/register/relocate`、`project init/trust`、`doctor`、`resolve`、`validate`、`checkpoint`、`recover`、`repair`，支援 JSON 與非零錯誤碼。validate 預設唯讀，--knowledge 額外檢查已授權的知識關聯；repair 套用需明確提供預覽 plan_hash。完整規格中的其餘命令仍是提案。
 
 trust 預設只授予該專案反向索引讀取；明確使用 `project trust --knowledge read/write` 才開放綁定的 Knowledge 子樹。可用 `knowledge add/search/get` 保存及查詢有來源、適用環境與驗證資訊的 Markdown；不授權 Vault 其他區域。雛形沒有 Hooks、MCP Server 或背景服務，不自動修改既有 Agent 入口。
 

@@ -140,6 +140,17 @@ ID 必須相同，不改 Repo Manifest。保留舊候選紀錄並明確選定新
 
 舊 schema_version 1 journal 沒有可驗證 payload，回報 REPAIR_UNSUPPORTED，需人工核對備份；不假造 after-image。真實程序被終止後可能遺留 lock，工具不按時間自動移除，需使用者先確認持有者。Vault 反向索引初始化若在 journal 建立之前中斷，不在此 repair 的涵蓋範圍。
 
+## 唯讀完整性檢查
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath --json validate
+& $pythonPath --repo $repoPath --registry $registryPath --json validate --knowledge
+```
+
+檢查綁定、State／Handoff frontmatter、必填非空且唯一的章節、checkpoint hash／snapshot，以及與當前 Git 的差異。程式碼區塊中的標題不會滿足章節要求。缺失或損壞時仍列出其他可檢查項目，不自動修復或寫回。
+
+--knowledge 必須有 read/write grant，否則回報拒絕，不擴權。檢查範圍限 Knowledge 子樹與本專案反向索引，檢查引用、supersession 正反關係及循環。掃描不完整時不宣稱關聯有效。VALIDATED exit 0；VALIDATION_ISSUES exit 1。有效格式不是對歷史敘述或技術解法正確性的認證。
+
 ## 開發驗證
 
 ```powershell
