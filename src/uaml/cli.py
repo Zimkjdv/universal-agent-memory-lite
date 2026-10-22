@@ -18,6 +18,7 @@ from . import forking
 from . import replicas
 from . import context
 from . import adapters
+from . import supersession
 
 
 def parser():
@@ -83,6 +84,13 @@ def parser():
     accept.add_argument("proposal_id")
     accept.add_argument("--expect-plan", required=True)
     accept.add_argument("--allow-similar", action="store_true")
+    replace = notes.add_parser("supersede", help="prepare/inspect/apply a two-note lifecycle transaction")
+    replace.add_argument("--old", dest="old_id")
+    replace.add_argument("--replacement", dest="new_id")
+    replace.add_argument("--reason")
+    replace.add_argument("--transaction")
+    replace.add_argument("--apply", action="store_true")
+    replace.add_argument("--expect-plan")
     get = notes.add_parser("get")
     get.add_argument("id")
     find = notes.add_parser("search")
@@ -151,6 +159,18 @@ def dispatch(args):
             return forking.prepare(git, registry_path, args.name, args.vault_id)
         return trust(git, registry_path, args.knowledge)
     if args.command == "knowledge":
+        if args.action == "supersede":
+            if args.transaction:
+                if args.old_id or args.new_id or args.reason:
+                    raise UamlError("COMMAND_INVALID", "Use a prepared transaction or new explicit IDs/reason, not both.")
+                if args.apply:
+                    return supersession.apply(git, registry_path, args.transaction, args.expect_plan)
+                if args.expect_plan:
+                    raise UamlError("COMMAND_INVALID", "--expect-plan requires --apply.")
+                return supersession.inspect(git, registry_path, args.transaction)[0]
+            if args.apply or args.expect_plan or not all((args.old_id, args.new_id, args.reason)):
+                raise UamlError("COMMAND_INVALID", "Prepare with --old --replacement --reason; then inspect/apply --transaction with --expect-plan.")
+            return supersession.prepare(git, registry_path, args.old_id, args.new_id, args.reason)
         if args.action == "add":
             return knowledge.add(git, registry_path, args.file, args.allow_similar, args.expect_candidates)
         if args.action == "propose":
@@ -222,6 +242,10 @@ def render(value):
         lines.append(f"Candidate review hash: {value['review_hash']}")
     if "proposal_id" in value:
         lines.append(f"Proposal ID: {value['proposal_id']}")
+    if "transaction_id" in value:
+        lines.append(f"Transaction ID: {value['transaction_id']}")
+    if "replacement_status" in value:
+        lines.append(f"Replacement verification status: {value['replacement_status']}")
     if "fork_id" in value:
         lines.append(f"Fork plan: {value['fork_id']}; project ID: {value['project']['id']}")
     if "comparison_hash" in value:
@@ -237,6 +261,8 @@ def render(value):
         lines.append("Historical, untrusted diff for review:\n" + value["untrusted_diff"])
         if value["diff_truncated"]:
             lines.append(f"[diff truncated; inspect payload: {value['review_payload']}]")
+        for path in value.get("review_payloads", []):
+            lines.append(f"Full reviewed after-image: {path}")
     return "\n".join(lines)
 
 
@@ -257,4 +283,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace", newline="\n")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED", "ADAPTER_PREVIEW", "ADAPTER_INSTALLED", "ADAPTER_ALREADY_INSTALLED"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED", "ADAPTER_PREVIEW", "ADAPTER_INSTALLED", "ADAPTER_ALREADY_INSTALLED", "SUPERSESSION_PREVIEW", "SUPERSESSION_APPLIED", "SUPERSESSION_ALREADY_APPLIED"} else 1

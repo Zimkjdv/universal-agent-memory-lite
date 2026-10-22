@@ -8,7 +8,7 @@ from . import registry
 from .binding import load_project, resolve
 from .errors import UamlError
 from .formats import (base, digest, fields, frontmatter, identifier, json_bytes, read_bytes,
-                      safe_metadata, string, timestamp)
+                      parse_json, safe_metadata, string, timestamp)
 from .paths import inside
 from .storage import lock, write
 
@@ -21,7 +21,7 @@ def validate(data: bytes):
     header, body = frontmatter(data)
     fields(header, ("schema_version", "kind", "revision", "id", "title", "category", "status", "source_project_ids",
                     "created_at", "updated_at", "applicability", "verification", "related_ids", "supersedes"),
-           ("deprecation_reason", "superseded_by"))
+           ("deprecation_reason", "superseded_by", "supersession_reason"))
     base(header, "knowledge")
     identifier(header["id"])
     for key in ("title", "category"):
@@ -72,13 +72,54 @@ def validate(data: bytes):
         identifier(header.get("superseded_by"))
         if header["superseded_by"] == header["id"]:
             raise UamlError("SCHEMA_INVALID", "Knowledge cannot supersede itself.")
+    if "supersession_reason" in header:
+        string(header["supersession_reason"])
     if not body.strip():
         raise UamlError("SCHEMA_INVALID", "Knowledge requires a nonempty Markdown body.")
     safe_metadata({"metadata": header, "body": body})
     return header, body
 
 
-def authorize(git, registry_path: Path, write_access=False):
+def pending_transaction(vault_path):
+    try:
+        raw = read_bytes(inside(vault_path, ".uaml/knowledge-transaction.json"))
+    except UamlError as exc:
+        if exc.code == "MEMORY_MISSING":
+            return None
+        raise
+    marker = parse_json(raw)
+    fields(marker, ("schema_version", "kind", "id", "plan_hash"))
+    identifier(marker["id"])
+    if (type(marker["schema_version"]) is not int or marker["schema_version"] != 1 or marker["kind"] != "knowledge_supersession"
+            or not isinstance(marker["plan_hash"], str) or not re.fullmatch(r"[0-9a-f]{64}", marker["plan_hash"])):
+        raise UamlError("SCHEMA_INVALID", "Unrecognized knowledge transaction marker; preserve it and inspect manually.")
+    return marker
+
+
+def read_stamp(vault_path):
+    pending = pending_transaction(vault_path)
+    if pending:
+        raise UamlError("KNOWLEDGE_TRANSACTION_PENDING", f"Knowledge transaction {pending['id']} is unfinished; preserve its marker and use the original plan.")
+    try:
+        raw = read_bytes(inside(vault_path, ".uaml/knowledge-revision.json"))
+    except UamlError as exc:
+        if exc.code == "MEMORY_MISSING":
+            return None
+        raise
+    value = parse_json(raw)
+    fields(value, ("schema_version", "transaction_id"))
+    identifier(value["transaction_id"])
+    if type(value["schema_version"]) is not int or value["schema_version"] != 1:
+        raise UamlError("SCHEMA_UNSUPPORTED", "Unknown knowledge revision receipt.")
+    return digest(raw)
+
+
+def check_read_stamp(vault_path, before):
+    if read_stamp(vault_path) != before:
+        raise UamlError("WRITE_CONFLICT", "A knowledge lifecycle transaction completed during this read; retry against the current consistent state.")
+
+
+def authorize(git, registry_path: Path, write_access=False, *, allow_pending=False):
     result = resolve(git, registry_path)
     if result["status"] != "RESOLVED":
         raise UamlError(result["status"], "Resolve and approve this checkout before accessing knowledge.")
@@ -89,6 +130,9 @@ def authorize(git, registry_path: Path, write_access=False):
     vault_path = Path(result["vault_path"])
     if digest(read_bytes(inside(vault_path, ".uaml/vault.yaml"))) != result["vault_fingerprint"]:
         raise UamlError("CHECKOUT_UNTRUSTED", "Vault identity metadata changed during authorization.")
+    pending = pending_transaction(vault_path)
+    if pending and not allow_pending:
+        raise UamlError("KNOWLEDGE_TRANSACTION_PENDING", f"Finish reviewed supersession {pending['id']} using its original private plan; preserve the marker and notes.")
     # Knowledge actions explicitly check known-copy content, without making
     # ordinary resolve/recover scan every knowledge note.
     from .replicas import guard
@@ -177,8 +221,10 @@ def add(git, registry_path: Path, source: Path, allow_similar=False, expected_ca
 
 def get(git, registry_path: Path, knowledge_id: str):
     identifier(knowledge_id)
-    _, _, root = authorize(git, registry_path)
+    _, vault_path, root = authorize(git, registry_path)
+    stamp = read_stamp(vault_path)
     note = record(inside(root, f"{knowledge_id}.md"))
+    check_read_stamp(vault_path, stamp)
     return {"status": "KNOWLEDGE_FOUND", **view(note, 12 * 1024)}
 
 
@@ -197,8 +243,10 @@ def search(git, registry_path: Path, query: str, filters=None, limit=5):
     filters = filters or {}
     if filters.get("version") and not filters.get("component"):
         raise UamlError("QUERY_INVALID", "A component version filter requires its component name.")
-    _, _, root = authorize(git, registry_path)
+    _, vault_path, root = authorize(git, registry_path)
+    stamp = read_stamp(vault_path)
     records, diagnostics, complete = scan(root)
+    check_read_stamp(vault_path, stamp)
     matches = []
     terms = re.findall(r"\w+(?:[.+/-]\w+)*", query.casefold())
     if not terms:

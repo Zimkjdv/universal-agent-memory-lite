@@ -24,7 +24,9 @@ def validate_change(header, body, old, project_id):
             not set(prior["source_project_ids"]).issubset(header["source_project_ids"])):
         raise UamlError("SCHEMA_INVALID", "Keep creation time and sources, and increment revision by exactly one.")
     if (header["supersedes"] != prior["supersedes"] or header.get("superseded_by") != prior.get("superseded_by") or
-            (header["status"] == "superseded" and prior["status"] != "superseded")):
+            header.get("supersession_reason") != prior.get("supersession_reason") or
+            (header["status"] == "superseded" and prior["status"] != "superseded") or
+            (prior["status"] == "superseded" and header["status"] != "superseded")):
         raise UamlError("RELATION_CHANGE_UNSUPPORTED", "Cross-note supersession requires a separate multi-note workflow.")
     def date(value):
         return datetime.fromisoformat(value.replace("Z", "+00:00"))

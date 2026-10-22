@@ -1,6 +1,6 @@
 # 架構設計
 
-狀態：Phase 3 整體設計；2026-10-22 已實作身份／解析／Repo 保存恢復、checkpoint 補完、明確授權 Knowledge 新增／讀取／有界搜尋、精確／近似去重及單篇提案修訂。Agent 獨立手動入口已實作；原生自動載入與跨筆記生命週期交易仍是計畫。資料欄位見 [Schema](DATA-SCHEMAS.md)，解析見 [Resolver](BINDING-RESOLVER.md)。
+狀態：Phase 3 整體設計；2026-10-22 已實作身份／解析／Repo 保存恢復、checkpoint 補完、明確授權 Knowledge 新增／讀取／有界搜尋、精確／近似去重、單篇修訂及雙篇替代交易。Agent 獨立手動入口已實作；原生自動載入仍待實機驗證。資料欄位見 [Schema](DATA-SCHEMAS.md)，解析見 [Resolver](BINDING-RESOLVER.md)。
 
 ## 權威來源
 
@@ -111,6 +111,10 @@ Vault/
 6. 索引不完整：先補足檢查，或保留為提案；不能宣稱確定沒有重複。
 
 精確內容正規化只處理明確無語意差異（例如換行）；不移除版本、否定詞或任意標點來決定自動去重。新增的最終檢查在共同鎖內執行，避免並行建立同樣知識。
+
+## 知識替代交易
+
+supersession.py 管理兩份既有知識的明確替代交易：私有 before/after、完整目錄 hash、雙向關聯驗證及 pending 標記。apply 在 Repo／Vault 鎖內寫入，完成後保存 revision 收據才清除標記。knowledge 的普通讀取檢查 pending 及前後收據，validate 採同一政策；不回傳已知混合狀態。這是本機合作程序保護，其他程序可直接讀 Markdown，非合作／跨機一致性仍無保證。
 
 ## Agent 適配
 

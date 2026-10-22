@@ -49,6 +49,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 2026-10-22：完整 147 項測試通過。新增 10 案例，覆蓋未授權時預覽零 Vault 讀取、套用只增指定檔、既有規範／Registry／Vault／工作成果不變、同內容冪等、不同內容整批拒絕、Remote／計畫變更、活鎖、中斷重預覽補建、無本機路徑、單一共用流程及 CLI。Codex→Claude→Codex 名稱透過共用 checkpoint／recover 格式驗證，僅為程式層契約，T01/T02 的真實 Agent 對話尚未執行。
 
+### 第三輪項目 3：跨筆記知識替代交易
+
+2026-10-22：完整 167 項測試通過，沒有 skip。新增 20 案例，涵蓋雙向關聯／歷史鏈／狀態篩選、正文／證據／來源／建立時間保留、只讀提案與 write 授權、hash／payload／目錄／Remote／活鎖、人工變更／偽造正文拒絕、第一檔／第二檔／收據／標記清理中斷、pending 阻擋讀寫／驗證、其他交易不能取代標記、續做／冪等、讀取期間完成交易的收據衝突及 CLI。單篇提案不能復活 superseded 筆記。測試使用臨時 Repo／Vault；不宣稱跨機分散式交易、真實斷電、所有非合作編輯或完整 T08/T12 已驗收。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

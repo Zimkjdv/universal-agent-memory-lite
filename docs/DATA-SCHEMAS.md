@@ -181,7 +181,15 @@ supersedes: []
 
 verified 必須有適用環境、時間與證據；變更步驟或適用條件後重新驗證。deprecated 必須有原因；superseded 必須有替代 ID，並維持正反引用一致。專案可引用 ID＋revision/hash，辨識後續變更。空環境不表示通用適用。
 
-已實作的 components 是 `{name, version}` 物件列表，名稱不重複；applicability 可選 conditions 字串列表。verification.evidence 是 `{method, result, source?}` 物件列表，checked_at 帶時區。deprecated 額外要求 deprecation_reason；superseded 要求 superseded_by UUID。新增匯入只接受 active 狀態、revision=1、目前 Project 為 source，禁止用 supersedes 改寫其他筆記生命週期；跨筆記 supersession 一致性交易留待後續實作。
+已實作的 components 是 `{name, version}` 物件列表，名稱不重複；applicability 可選 conditions 字串列表。verification.evidence 是 `{method, result, source?}` 物件列表，checked_at 帶時區。deprecated 額外要求 deprecation_reason；superseded 要求 superseded_by UUID，可選 supersession_reason 字串（supersede 流程會保存明確原因）。新增匯入只接受 active 狀態、revision=1、目前 Project 為 source，禁止用 supersedes 改寫其他筆記生命週期；跨筆記替代只能使用 supersede 交易。
+
+## 本機 supersession 計畫 v1 與 Vault 交易中繼資料
+
+`supersessions/<transaction-id>.json` 為 schema_version=1、kind=knowledge_supersession、id、project_id、context、reason、updated_at、entries、other_catalog_hash。entries 恰為舊／替代兩個 UUID 的 before_hash／after_hash；相同索引 `.0/.1.before/after` 保存完整原檔與 payload。context 綁定 Git 身份、Manifest 與所選 Vault／Knowledge 路徑。plan_hash 為計畫原始 bytes 的 SHA-256，續做使用同一不可變計畫。
+
+Vault `.uaml/knowledge-transaction.json` 只保存 schema_version=1、kind=knowledge_supersession、id、plan_hash，不保存本機路徑。所有檔完成並核對後，`.uaml/knowledge-revision.json` 保存 schema_version=1、transaction_id，最後才移除匹配的 pending 標記。普通知識操作對存在／損壞標記拒絕服務；get/search/validate --knowledge 比對前後收據，偵測期間完成的交易。私有 payload／計畫留在原機器 Registry 同層，不因複製 Vault 自動同步。
+
+套用只接受精確 before／after，重新產生允許的 metadata 變更來驗證 payload，保留正文／環境／證據／建立時間／原有來源及關聯。完整前後圖必須無缺失、正反不一致或循環；其餘目錄內容改變時拒絕續做，保留人工成果待審查。
 
 ## 本機獨立 Fork 計畫 v1
 

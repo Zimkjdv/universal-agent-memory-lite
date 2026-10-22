@@ -20,7 +20,8 @@ def exact_key(header, body):
              "body": body.replace("\r\n", "\n"), "applicability": applicability(header),
              "status": header["status"], "evidence": header["verification"]["evidence"],
              "related_ids": sorted(header["related_ids"]), "supersedes": sorted(header["supersedes"]),
-             "deprecation_reason": header.get("deprecation_reason"), "superseded_by": header.get("superseded_by")}
+             "deprecation_reason": header.get("deprecation_reason"), "superseded_by": header.get("superseded_by"),
+             "supersession_reason": header.get("supersession_reason")}
     return digest(json_bytes(value))
 
 

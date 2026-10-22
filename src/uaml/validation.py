@@ -114,8 +114,10 @@ def validate(git, registry_path, include_knowledge=False):
                    all(source["checkpoint_verified"] for source in recovery["sources"]) else "UNVERIFIED"})
     if include_knowledge:
         try:
-            _, _, root = knowledge.authorize(git, registry_path)
+            _, knowledge_vault, root = knowledge.authorize(git, registry_path)
+            stamp = knowledge.read_stamp(knowledge_vault)
             notes, issues, complete = knowledge.scan(root)
+            knowledge.check_read_stamp(knowledge_vault, stamp)
             diagnostics.extend(issues)
             if complete:
                 before_count = len(diagnostics)

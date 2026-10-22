@@ -56,6 +56,8 @@ uaml checkpoint
 uaml knowledge search <query>
 uaml knowledge propose <file>
 uaml knowledge apply <proposal>
+uaml knowledge supersede --old <id> --replacement <id> --reason <text>
+uaml knowledge supersede --transaction <id> [--apply --expect-plan <hash>]
 uaml repair
 ```
 

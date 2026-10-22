@@ -5,7 +5,7 @@
 UAML 以可攜式 Repository–Vault Binding，連結 Git 專案、專案交接記錄與本地 Obsidian 知識庫，讓 Codex、Claude Code 及未來其他 Agent 接續已持久化的開發工作。
 
 > **目前狀態：可本地安裝的 CLI 雛形 `0.1.0.dev0`，完整 MVP 尚未完成。**
-> 2026-10-22 已獲授權先實作 Roadmap 的部分核心項目。具備身份初始化、Registry、checkout 授權、保存／恢復與中斷補完，以及明確授權的共用知識儲存／搜尋、精確去重、近似候選與安全修訂；Agent 適配與真實跨機驗收仍待完成。`v0.1.0` 是目標首版，不是已發布版本。
+> 2026-10-22 已獲授權先實作 Roadmap 的部分核心項目。具備身份初始化、Registry、checkout 授權、保存／恢復與中斷補完，以及明確授權的共用知識儲存／搜尋、去重、安全修訂與雙向替代關聯；已有 Agent 獨立手動入口，真實接管與跨機驗收仍待完成。`v0.1.0` 是目標首版，不是已發布版本。
 
 ## 目標情境
 
@@ -75,6 +75,8 @@ python -m venv .venv
 trust 預設只授予該專案反向索引讀取；明確使用 `project trust --knowledge read/write` 才開放綁定的 Knowledge 子樹。可用 `knowledge add/search/get` 保存及查詢有來源、適用環境與驗證資訊的 Markdown；不授權 Vault 其他區域。雛形沒有 Hooks、MCP Server 或背景服務，不自動修改既有 Agent 入口。
 
 完全重複會回傳既有 ID；近似內容需審查後明確保留，版本與環境差異不自動合併。修改筆記先使用 `knowledge propose` 檢視差異，再以 `knowledge apply --expect-plan` 套用；若來源、Vault、目標或知識目錄改變，需重新提案。
+
+`knowledge supersede` 明確選擇舊／替代 ID 及原因，審閱後才套用雙向關聯；保留正文、環境與驗證。未完成交易以 Vault 標記阻擋知識使用，原私有計畫可續做，人工修改則拒絕覆蓋。替代不代表跨版本相容或重新驗證，詳見安裝指南。
 
 獨立 Fork 必須明確指定目標 Vault。流程建立新 Project／Memory ID 與空白狀態，舊記憶只在本機封存，不自動讀取來源 Vault、不搬移私人知識、不繼承 checkout 授權。它不修改 Git Remote 或自動 Commit。
 

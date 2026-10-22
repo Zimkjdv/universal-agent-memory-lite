@@ -118,7 +118,28 @@ review_hash 綁定輸入內容及目前知識目錄，變更後須重新審查�
 
 propose 只在 Registry 同層 proposals/ 保存本機提案／payload，不寫 Vault；read grant 可提案，apply 必須 write grant。差異超過 12 KiB 時明示截斷並附完整 payload 位置，不能把截斷摘要當成完整審閱。提案綁定 checkout、Project／Vault、原檔、payload 與整份目錄 hash；任何改變都拒絕套用。成功修改會備份原檔；不刪除或合併其他筆記。
 
-若有近似候選，apply 額外需要明確 --allow-similar。完全重複仍不得透過此參數建立第二份權威。修改 verified 的步驟或適用條件時，需更新較新的 checked_at 與有效證據，或明確降為 experimental；UAML 不代為執行驗證命令。可帶原因 deprecated 單篇筆記；跨筆記 supersedes/superseded_by 交易尚未支援，拒絕用單篇修訂改寫。
+若有近似候選，apply 額外需要明確 --allow-similar。完全重複仍不得透過此參數建立第二份權威。修改 verified 的步驟或適用條件時，需更新較新的 checked_at 與有效證據，或明確降為 experimental；UAML 不代為執行驗證命令。可帶原因 deprecated 單篇筆記；跨筆記 supersedes/superseded_by 必須使用獨立 supersede 流程，單篇提案不能改寫關聯、原因或復活已替代筆記。
+
+### 知識替代關係
+
+先保存並驗證兩份獨立筆記，再明確選擇要被替代的 ID、替代它的 ID 及原因：
+
+```powershell
+& $pythonPath --repo $repoPath --registry $registryPath --json knowledge supersede --old '<old-id>' --replacement '<new-id>' --reason '新版已核對；舊版經驗保留供查詢'
+# 審閱雙方適用條件、驗證狀態、diff 與兩份完整 review_payloads
+& $pythonPath --repo $repoPath --registry $registryPath --json knowledge supersede --transaction '<transaction-id>'
+& $pythonPath --repo $repoPath --registry $registryPath knowledge supersede --transaction '<transaction-id>' --apply --expect-plan '<plan-hash>'
+```
+
+prepare 需要 Knowledge read/write grant，僅寫 Registry 同層 supersessions/ 的私有計畫及兩份 before/after，不改 Vault。inspect 唯讀；apply 必須 write grant。兩個 ID 必須已存在、不同，舊筆記尚未 superseded，替代筆記必須 verified 或 experimental；原有及投影後關聯需完整且無循環。條件／版本不同並不證明新方案適用舊環境，必須人工審查；experimental 替代仍未驗證，不自動提升狀態。
+
+套用只將舊筆記標為 superseded、記錄 superseded_by／supersession_reason，在替代筆記加入 supersedes；兩者 revision 加一、時間不倒退並保留／補充來源專案。正文、建立時間、環境、驗證證據及原有關聯保留，沒有刪除或合併技術資訊。可建立 A→B→C 的歷史鏈；一般搜尋排除舊 superseded 筆記，明確 get 或 status 篩選仍能查詢。
+
+計畫綁定 checkout／Manifest／所選 Vault、完整原檔／payload hash 及其餘知識目錄；變更或人工修改後拒絕覆蓋。Repo＋Vault 合作鎖內先建立 .uaml/knowledge-transaction.json 標記，才替換兩檔並保存備份；完整性及關聯驗證後寫 knowledge-revision.json 收據，最後只移除精確匹配的工具標記。普通 get/search/validate --knowledge 在未完成期間拒讀；若交易恰於讀取期間完成，收據前後不一致會拒絕回傳混合結果。此保護不等於跨機交易或非合作編輯隔離。
+
+中斷時保留標記，以原 transaction-id 重新 inspect／apply；只接受精確 before 或 after，不復原未保存內容、不回滾人工修改、不搶遺留鎖。其他交易不能取代 pending 標記。若兩檔完成但收據／標記清理失敗，同一計畫可補完；全部完成後相同計畫為 no-op，後續人工變更不覆蓋。私有計畫遺失時須人工核對原備份與筆記，不直接刪標記；複製 Vault 不會自動帶來這些本機計畫。
+
+多副本沿用現有衝突政策：合法寫入也會使舊 authority hash 失效。中斷續做若回報副本衝突，須先 compare --knowledge／select 審查當前副本，再用原計畫續做；不略過衝突、同步或刪除其他副本。
 
 ## 搬遷與候選副本
 

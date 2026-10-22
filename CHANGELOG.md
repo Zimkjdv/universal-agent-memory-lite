@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-22：第三輪優先項目 3
+
+- knowledge supersede 預覽、私有 before/after 計畫、完整 payload 路徑與明確 hash 套用。
+- 雙向 supersedes／superseded_by、supersession_reason、revision／來源追蹤；保留正文、環境、證據與歷史鏈，不自動合併。
+- Repo／Vault 鎖、完整目錄與 payload 檢查、備份、pending 標記、中斷續做及完成後冪等；人工修改拒絕覆蓋。
+- get/search/validate --knowledge 拒絕未完成狀態，讀取前後收據檢查防止交易完成期間的混合結果。
+- 單篇提案不可修改替代原因／關聯或復活 superseded 筆記。
+
 ### Added — 2026-10-22：第三輪優先項目 2
 
 - adapter --agent codex/claude-code/all 預覽完整檔案；--apply --expect-plan 才建立獨立 Markdown 手動入口。
