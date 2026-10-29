@@ -14,7 +14,9 @@ class Workspace(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="uaml-tests-")
         self.addCleanup(self.temp.cleanup)
-        self.base = Path(self.temp.name)
+        # Windows runners may expose TEMP through an 8.3 alias. Match the
+        # canonical roots used by production Registry/Git path resolution.
+        self.base = Path(self.temp.name).resolve()
         self.repo = self.base / "專案 with spaces"
         self.repo.mkdir()
         self.git_cmd("init", "-b", "main")

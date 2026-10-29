@@ -8,6 +8,7 @@
 
 - CI 發現遷移 fixture 的一次性 -c core.autocrlf 設定沒有保留到目的地，Linux 隨後正確偵測到 dirty worktree。
 - 改用 clone --config 持久設定並驗證目的地值；新增目的地設定改變後仍須要求審查的回歸案例，保留原 byte／hash 驗收要求。
+- Windows runner 的 TEMP 可能是 8.3 短名稱；測試 Workspace 統一 canonical 根目錄，使 mock 與正式 Registry 的已解析路徑一致，保留私人 Vault 拒讀／不可讀副本斷言。
 
 ### Added — 2026-10-29：第四輪優先項目 3
 
