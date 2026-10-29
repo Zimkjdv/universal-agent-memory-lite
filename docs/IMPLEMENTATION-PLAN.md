@@ -40,6 +40,7 @@ tests/acceptance/
 
 ```text
 uaml doctor
+uaml registry audit
 uaml resolve
 uaml recover
 uaml recover --compact [--max-bytes 32768]

@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-29：第四輪優先項目 1
+
+- registry audit：不依賴 Git 的本機 Registry／已知私有 artifacts 權限稽核，最多 1024 項。
+- Windows 原生 owner／DACL／ACE 讀取與保守授權分類；Unix owner／mode／extended ACL 未確認診斷。
+- 權限不足、未知 ACE、null／empty DACL、連結、多 hard links、巢狀或超限不誤報安全。
+- 不讀正文、不改 ACL／設定、不建立 Registry；新增 10 案例，含真實 Windows Everyone grant fixture。
+
 ### Added — 2026-10-22：第三輪優先項目 3
 
 - knowledge supersede 預覽、私有 before/after 計畫、完整 payload 路徑與明確 hash 套用。

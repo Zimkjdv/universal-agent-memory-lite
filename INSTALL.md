@@ -206,6 +206,18 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 
 適配入口以 `adapter --agent codex/claude-code/all` 預覽，再加 --apply --expect-plan 套用；命令中的斜線表示三個選項擇一。操作與啟用方式見 [Codex／Claude 接管指南](docs/AGENT-GUIDE.md)。建立入口不代表已設定原生自動載入。
 
+## 本機 Registry 權限稽核
+
+```powershell
+& $pythonPath --registry $registryPath --json registry audit
+```
+
+不需要 Git 專案、不建立缺失 Registry。只檢查 Registry 所在目錄／檔案，以及已知 backups、transactions、proposals、forks、supersessions、cache 子目錄與其中一層 artifacts，最多 1024 個項目；不讀正文、不掃描 Vault、不改 ACL、擁有者或設定。其他根目錄檔案不在本次範圍，結果不可當作整部電腦安全認證。
+
+Windows 使用原生 owner／DACL API，將目前程序使用者、SYSTEM 與本機 Administrators 視為特權受信主體。其他 allow ACE／owner 列為風險，包含 inherit-only grants；這是保守授權稽核，不計算 deny 順序、群組成員及條件 ACE 的完整有效存取。未知 ACE、空 DACL、權限不足、連結／多 hard links／巢狀 artifacts 或超限均需人工核對，不誤報通過。Unix 類系統檢查 owner／group-other mode，存在或無法檢查 extended ACL 時明示未確認。
+
+PERMISSIONS_RESTRICTED exit 0 只表示本次範圍內未發現額外授權；PERMISSION_ISSUES exit 1。稽核不測試實際寫入能力，不隔離同使用者、SYSTEM 或管理員。先依診斷審核作業系統權限或將私有資料放到適當目錄；工具不自動收緊既有目錄，避免影響共用資料或鎖住使用者。輸出可能含本機路徑、SID 與私有 artifact 名稱，請勿直接提交公開 Repository。
+
 ## 開發驗證
 
 ```powershell

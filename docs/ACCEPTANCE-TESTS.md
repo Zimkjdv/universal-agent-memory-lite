@@ -53,6 +53,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 2026-10-22：完整 167 項測試通過，沒有 skip。新增 20 案例，涵蓋雙向關聯／歷史鏈／狀態篩選、正文／證據／來源／建立時間保留、只讀提案與 write 授權、hash／payload／目錄／Remote／活鎖、人工變更／偽造正文拒絕、第一檔／第二檔／收據／標記清理中斷、pending 阻擋讀寫／驗證、其他交易不能取代標記、續做／冪等、讀取期間完成交易的收據衝突及 CLI。單篇提案不能復活 superseded 筆記。測試使用臨時 Repo／Vault；不宣稱跨機分散式交易、真實斷電、所有非合作編輯或完整 T08/T12 已驗收。
 
+### 第四輪項目 1：本機私有資料權限稽核
+
+2026-10-29：完整 177 項測試通過，沒有 skip。新增 10 案例，涵蓋唯讀／不開啟正文、已知私有 artifacts、缺失 Registry、不允許 Repo／Vault、ACL 拒讀、巢狀／hard links／超限、null／empty／unknown ACE 區分，以及真實 Windows 臨時檔的 Everyone 讀取 grant 風險偵測和非 Git CLI。環境仍為 Windows 10 build 19045／Python 3.12.10；測試只改合成 ACL fixture，不對真實 Registry／Vault 或全域設定操作。這是保守授權稽核證據，不是自動 ACL 強化或完整 T12 驗收。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

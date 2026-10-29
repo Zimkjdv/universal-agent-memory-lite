@@ -79,4 +79,6 @@ Registry／備份限制目前使用者，不放寬 ACL。備份舊內容前同�
 
 ## 必要驗證
 
+2026-10-29 已加入唯讀 registry audit，檢查指定本機 Registry 目錄／檔案與已知私有 artifacts；結果不是完整 effective-access 或 ACL 自動強化。Windows 依 [GetNamedSecurityInfoW](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getnamedsecurityinfow) 讀 owner／DACL，再逐項檢查 ACE，不呼叫外部權限腳本或改 privileges。null DACL 與空 DACL 分別回報風險與無存取待核對，依 [Microsoft 定義](https://learn.microsoft.com/en-us/windows/win32/secauthz/null-dacls-and-empty-dacls)。其他 allow grant 保守列為風險，未知 ACE／讀取失敗／超限列未確認；不以 allow/deny 的簡化判斷宣稱完整有效權限。SYSTEM／Administrators 視為 OS 特權主體，不能隔離它們或同使用者程序。
+
 Windows ACL、junction/symlink、檔案佔用、鎖持有、並行寫入、半完成 checkpoint、手動修改後復原、惡意筆記與假 Token、未知 Schema。完整案例見 [驗收計畫](ACCEPTANCE-TESTS.md)。

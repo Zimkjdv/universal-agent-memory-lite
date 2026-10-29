@@ -88,6 +88,8 @@ trust 預設只授予該專案反向索引讀取；明確使用 `project trust -
 
 `adapter --agent all` 預覽 Codex／Claude 的獨立手動入口，`--apply --expect-plan` 才建立檔案；兩者共用一份流程，不修改既有 Agent 規範或全域設定。詳見接管指南；真實 Agent 自動載入與雙向對話驗收仍未完成。
 
+`registry audit` 唯讀檢查本機 Registry／已知私有 artifacts 的授權風險，不讀正文、不改 ACL；未知或不完整檢查明示。這是權限稽核，完整安全化仍需作業系統設定與驗收。
+
 ## 授權與研究來源
 
 本專案採 [MIT License](LICENSE)。研究參考 Obsidian Mind，但本次僅整理研究與原創設計文件，沒有匯入其程式碼。未來若重用實質程式碼，須保留適用的上游授權通知。
