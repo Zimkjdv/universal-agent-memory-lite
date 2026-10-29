@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-29：第四輪優先項目 2
+
+- migration check --mode github/local：唯讀檢查來源身份、checkpoint／章節、Git 保存差異、byte-exact HEAD、local tracking evidence、待完成 journal 及疑似已追蹤的私有 artifacts。
+- --knowledge 只使用明確既有 grant；缺失／未完成／損壞／超限明示，不自動授權或建立替代 Vault。
+- migration rules 預覽／hash 確認套用四檔的 -text 規則，保留既有 .gitattributes、index、全域設定；檢查 filter／encoding override。
+- 新機定位與遷移指南；本地 bare remote 的 CRLF Clone／新 Registry／不同 Vault 路徑及 staged／unstaged／untracked 複製驗證。
+
 ### Added — 2026-10-29：第四輪優先項目 1
 
 - registry audit：不依賴 Git 的本機 Registry／已知私有 artifacts 權限稽核，最多 1024 項。

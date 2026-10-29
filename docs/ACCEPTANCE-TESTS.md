@@ -57,6 +57,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 2026-10-29：完整 177 項測試通過，沒有 skip。新增 10 案例，涵蓋唯讀／不開啟正文、已知私有 artifacts、缺失 Registry、不允許 Repo／Vault、ACL 拒讀、巢狀／hard links／超限、null／empty／unknown ACE 區分，以及真實 Windows 臨時檔的 Everyone 讀取 grant 風險偵測和非 Git CLI。環境仍為 Windows 10 build 19045／Python 3.12.10；測試只改合成 ACL fixture，不對真實 Registry／Vault 或全域設定操作。這是保守授權稽核證據，不是自動 ACL 強化或完整 T12 驗收。
 
+### 第四輪項目 2：移機預檢與 bytes 保護
+
+2026-10-29：完整 192 項測試通過，沒有 skip。新增 15 案例，包含實際本機 bare remote→core.autocrlf=true Clone、不同 Vault 路徑／全新 Registry／重新核准、四檔原始 hash 不變、local copy 保留 index／staged／unstaged／untracked、外部 worktree metadata、未提交／過時／損壞／prepared journal、知識權限／pending、local attribute override、保留自訂 .gitattributes 與 CLI。所有遷移測試均為同機隔離 fixtures；不視為 T03 第二環境、真實 GitHub Push 即時狀態或真實 Agent 接管已通過。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

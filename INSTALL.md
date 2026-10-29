@@ -218,6 +218,10 @@ Windows 使用原生 owner／DACL API，將目前程序使用者、SYSTEM 與本
 
 PERMISSIONS_RESTRICTED exit 0 只表示本次範圍內未發現額外授權；PERMISSION_ISSUES exit 1。稽核不測試實際寫入能力，不隔離同使用者、SYSTEM 或管理員。先依診斷審核作業系統權限或將私有資料放到適當目錄；工具不自動收緊既有目錄，避免影響共用資料或鎖住使用者。輸出可能含本機路徑、SID 與私有 artifact 名稱，請勿直接提交公開 Repository。
 
+## 移機預檢
+
+移機前使用 `migration check --mode github` 或 `--mode local`；GitHub Clone 模式另需檢查 Git 換行／filter 轉換，`migration rules` 提供可預覽、明確套用的四檔 -text 規則。兩種模式、保存／提交順序、新機 register／trust 與待完成交易限制見 [跨電腦遷移指南](docs/MIGRATION-GUIDE.md)。預檢不代表真實遷移已完成。
+
 ## 開發驗證
 
 ```powershell

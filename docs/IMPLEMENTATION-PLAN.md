@@ -41,6 +41,8 @@ tests/acceptance/
 ```text
 uaml doctor
 uaml registry audit
+uaml migration check --mode github [--knowledge]
+uaml migration rules [--apply --expect-plan <hash>]
 uaml resolve
 uaml recover
 uaml recover --compact [--max-bytes 32768]

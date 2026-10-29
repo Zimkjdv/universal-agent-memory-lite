@@ -116,6 +116,10 @@ Vault/
 
 supersession.py 管理兩份既有知識的明確替代交易：私有 before/after、完整目錄 hash、雙向關聯驗證及 pending 標記。apply 在 Repo／Vault 鎖內寫入，完成後保存 revision 收據才清除標記。knowledge 的普通讀取檢查 pending 及前後收據，validate 採同一政策；不回傳已知混合狀態。這是本機合作程序保護，其他程序可直接讀 Markdown，非合作／跨機一致性仍無保證。
 
+## 跨機預檢
+
+migration.py 提供來源預檢（不複製資料），GitHub 模式比對目前四檔與 HEAD 原始 bytes，驗證已提交的四檔保護規則及目前 attributes；local 模式保留未提交工作並檢查 external Git metadata。只含記憶檔的祖先 Commit 差異可解釋 self-reference；程式碼、分支與 working content 仍需核對。兩份獨立 .gitattributes 僅在精確預覽確認後建立，不改 index／root 規則／全域設定。新電腦重新註冊與核准，資料與未完成交易限制見 [遷移指南](MIGRATION-GUIDE.md)。
+
 ## Agent 適配
 
 已實作 adapters.py 的預覽／明確套用：.uaml/adapters/WORKFLOW.md 保存一份 UAML 流程，CODEX.md／CLAUDE-CODE.md 是條件式指標。預覽不讀 Vault；套用只建立缺失檔，已有不同內容拒絕覆蓋，計畫綁定當前 Manifest／Git／目標 hash。無自動 native 設定、全域設定或權限變更。啟用與人工選配引用見 [接管指南](AGENT-GUIDE.md)。

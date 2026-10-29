@@ -50,6 +50,7 @@ Local-first 指 UAML 的儲存、解析與搜尋在本機進行；雲端 Agent �
 | [Changelog](CHANGELOG.md) | 真正已完成的變更，與未發布狀態 |
 | [雛形安裝與試用](INSTALL.md) | 本地安裝、一次性示範、命令與已知限制 |
 | [Codex／Claude 接管指南](docs/AGENT-GUIDE.md) | 最小適配入口、手動啟用、新對話及雙向交接 |
+| [跨電腦遷移指南](docs/MIGRATION-GUIDE.md) | 來源預檢、Git 換行保護、Clone／本地複製與新機定位 |
 | [產品需求](docs/PRODUCT-REQUIREMENTS.md) | 功能、非功能需求、範圍與非目標 |
 | [研究報告](docs/RESEARCH.md) | 固定版本的 Obsidian Mind 原始碼與官方能力研究 |
 | [架構](docs/ARCHITECTURE.md) | 權威來源、模組、Git 核對、搜尋與去重 |
@@ -89,6 +90,8 @@ trust 預設只授予該專案反向索引讀取；明確使用 `project trust -
 `adapter --agent all` 預覽 Codex／Claude 的獨立手動入口，`--apply --expect-plan` 才建立檔案；兩者共用一份流程，不修改既有 Agent 規範或全域設定。詳見接管指南；真實 Agent 自動載入與雙向對話驗收仍未完成。
 
 `registry audit` 唯讀檢查本機 Registry／已知私有 artifacts 的授權風險，不讀正文、不改 ACL；未知或不完整檢查明示。這是權限稽核，完整安全化仍需作業系統設定與驗收。
+
+`migration check --mode github/local` 檢查來源是否有尚待處理的保存／Git／綁定問題；模式擇一，知識檢查需 --knowledge 與既有 grant。`migration rules` 預覽四檔 bytes 保護規則，明確套用才建立且保留既有自訂檔。工具不複製、推送或自動授權，詳細流程見遷移指南。
 
 ## 授權與研究來源
 
