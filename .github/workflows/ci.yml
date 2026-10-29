@@ -1,0 +1,41 @@
+name: UAML validation
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uaml-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  installed-package:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install build tools and project development dependencies
+        run: python -m pip install '.[dev]'
+      - name: Build sdist and wheel from that sdist
+        run: python -m build --no-isolation
+      - name: Prepare offline runtime wheelhouse
+        run: >-
+          python -m pip download --only-binary=:all: --dest .uaml-local/wheelhouse 'PyYAML>=6.0.2,<7'
+      - name: Verify artifacts and test a clean offline wheel installation
+        run: python scripts/verify_distribution.py --dist dist --wheelhouse .uaml-local/wheelhouse

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,11 +8,23 @@ version = "0.1.0.dev0"
 description = "Portable repository and Markdown vault binding for coding agents"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["PyYAML>=6.0.2,<7"]
+
+[project.optional-dependencies]
+dev = ["build>=1.2,<2", "setuptools>=77"]
+
+[project.urls]
+Repository = "https://github.com/Zimkjdv/universal-agent-memory-lite"
+Issues = "https://github.com/Zimkjdv/universal-agent-memory-lite/issues"
+Documentation = "https://github.com/Zimkjdv/universal-agent-memory-lite/blob/main/README.md"
 
 [project.scripts]
 uaml = "uaml.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools]
+include-package-data = false

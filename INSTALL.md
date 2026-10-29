@@ -230,6 +230,8 @@ PERMISSIONS_RESTRICTED exit 0 只表示本次範圍內未發現額外授權；PE
 
 使用標準函式庫 unittest，測試建立臨時 Repo／Vault；沒有 pytest、MCP、QMD 或背景服務依賴。正式十六項驗收的進度與尚未驗證部分見 [驗收計畫](docs/ACCEPTANCE-TESTS.md)。
 
+需要建置套件時，安裝可選 dev extra 並依 [建置檢查](docs/RELEASE-CHECKLIST.md) 執行 build 與 verify_distribution.py。驗證器會在另一個臨時 venv 離線安裝 wheel，再執行同一完整 suite；一般 runtime 不依賴 build／setuptools。CI 使用此流程，避免只測到 editable checkout。
+
 ## 獨立 Fork 身份
 
 先取得 Fork 的本地 Repository，註冊明確選定的目標 Vault。工具不推斷同一 ID 是否代表合作 Fork 或獨立專案；獨立流程才使用此命令：

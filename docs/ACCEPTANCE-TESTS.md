@@ -61,6 +61,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 2026-10-29：完整 192 項測試通過，沒有 skip。新增 15 案例，包含實際本機 bare remote→core.autocrlf=true Clone、不同 Vault 路徑／全新 Registry／重新核准、四檔原始 hash 不變、local copy 保留 index／staged／unstaged／untracked、外部 worktree metadata、未提交／過時／損壞／prepared journal、知識權限／pending、local attribute override、保留自訂 .gitattributes 與 CLI。所有遷移測試均為同機隔離 fixtures；不視為 T03 第二環境、真實 GitHub Push 即時狀態或真實 Agent 接管已通過。
 
+### 第四輪項目 3：套件與 CI 安裝驗證
+
+2026-10-29：本地建置 sdist 並由該 sdist 建立 wheel；artifact inventory、metadata／MIT 原文／console entry point 通過。臨時獨立 venv 停用 index，從本地 wheelhouse 安裝 runtime／wheel，確認 module origin 不是 editable checkout，pip check、示範及完整 197 項測試通過，沒有 skip。新增 5 個 artifact 路徑／漏模組／私有 payload／依賴比較案例。建置工具只安裝到專案 .venv，runtime 仍只有 PyYAML。Windows／Ubuntu × Python 3.11／3.12 workflow 已建立，結果需對照該 Commit 的 GitHub Actions run；本機 Windows 10 證據不替代 Windows 11 或第二環境／真實 Agent 驗收。沒有 release／tag／PyPI 上傳。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

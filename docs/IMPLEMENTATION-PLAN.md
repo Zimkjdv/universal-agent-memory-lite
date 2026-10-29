@@ -93,6 +93,8 @@ uaml repair
 
 ## 文件與發布清單
 
+2026-10-29 新增 scripts/verify_distribution.py 與 Windows／Ubuntu × Python 3.11／3.12 CI。dev extra 準備建置工具，build 從 sdist 產生 wheel；驗證在全新 venv 以本地 wheelhouse 離線安裝，再執行同一 suite 與示範，避免 editable 路徑遮蔽漏檔。runtime 依賴仍只有 PyYAML；建置／CI 結果及正式發布閘門見 [發布檢查](RELEASE-CHECKLIST.md)。
+
 實作後補 INSTALL.md、Windows Codex／Claude 使用指南、Binding 操作、跨機遷移、新對話接管、安全隱私、故障排除、授權與發布檢查。只有功能與驗收完成後才發布 v0.1.0；本次 Unreleased 文件提交不是 release/tag。
 
 主要風險與預防見 [安全文件](SECURITY-AND-RISKS.md)，重大選擇見 [待決策事項](DECISIONS.md)。

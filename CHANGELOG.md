@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-10-29：第四輪優先項目 3
+
+- 明確的 sdist 文件／測試／示範 manifest、SPDX MIT／license-files、project URLs 與可選 dev 建置依賴。
+- verify_distribution.py：artifact 路徑／inventory／metadata／license／entry point 檢查，在獨立 venv 離線安裝、驗證來源並執行示範及完整測試。
+- Windows／Ubuntu × Python 3.11／3.12 CI，官方 Actions 固定 SHA、唯讀內容權限，不持久保存 checkout 憑證。
+- 5 個 artifact 防護／依賴比較案例及發布前檢查表；未建立 release、tag 或 PyPI 上傳。
+
 ### Added — 2026-10-29：第四輪優先項目 2
 
 - migration check --mode github/local：唯讀檢查來源身份、checkpoint／章節、Git 保存差異、byte-exact HEAD、local tracking evidence、待完成 journal 及疑似已追蹤的私有 artifacts。

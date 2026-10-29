@@ -51,6 +51,7 @@ Local-first 指 UAML 的儲存、解析與搜尋在本機進行；雲端 Agent �
 | [雛形安裝與試用](INSTALL.md) | 本地安裝、一次性示範、命令與已知限制 |
 | [Codex／Claude 接管指南](docs/AGENT-GUIDE.md) | 最小適配入口、手動啟用、新對話及雙向交接 |
 | [跨電腦遷移指南](docs/MIGRATION-GUIDE.md) | 來源預檢、Git 換行保護、Clone／本地複製與新機定位 |
+| [建置與發布檢查](docs/RELEASE-CHECKLIST.md) | wheel／sdist、離線安裝驗證、CI 及正式版本閘門 |
 | [產品需求](docs/PRODUCT-REQUIREMENTS.md) | 功能、非功能需求、範圍與非目標 |
 | [研究報告](docs/RESEARCH.md) | 固定版本的 Obsidian Mind 原始碼與官方能力研究 |
 | [架構](docs/ARCHITECTURE.md) | 權威來源、模組、Git 核對、搜尋與去重 |
