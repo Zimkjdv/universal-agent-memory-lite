@@ -66,7 +66,8 @@ class MigrationTests(Workspace):
     def test_real_clone_with_crlf_and_fresh_registry_preserves_binding_and_hashes(self):
         remote = self.committed_source()
         destination = self.base / "new-computer" / "clone"
-        self.git_cmd("-c", "core.autocrlf=true", "clone", "--branch", "main", str(remote), str(destination))
+        self.git_cmd("clone", "--config", "core.autocrlf=true", "--branch", "main", str(remote), str(destination))
+        self.assertEqual(self.git_cmd("config", "--local", "--get", "core.autocrlf", cwd=destination).strip(), b"true")
         new_vault = self.base / "new-computer" / "different-drive-vault"
         shutil.copytree(self.vault, new_vault)
         new_registry = self.base / "new-computer" / "private" / "registry.json"
@@ -169,6 +170,17 @@ class MigrationTests(Workspace):
         (self.repo / ".git/info/attributes").write_text(".uaml/project.yaml text eol=crlf\n", encoding="utf-8")
         report = migration.check(self.git, self.registry, "github")
         self.assertIn("CHECKOUT_TRANSFORM", {d["code"] for d in report["diagnostics"]})
+
+    def test_changed_destination_newline_config_is_reported_as_dirty(self):
+        remote = self.committed_source()
+        destination = self.base / "newline-config-changed"
+        self.git_cmd("clone", "--config", "core.autocrlf=true", "--branch", "main", str(remote), str(destination))
+        self.git_cmd("config", "--local", "core.autocrlf", "false", cwd=destination)
+        new_git = Git(destination)
+        trust(new_git, self.registry)
+        report = migration.check(new_git, self.registry, "github")
+        self.assertEqual(report["status"], "MIGRATION_REVIEW_REQUIRED")
+        self.assertIn("WORKTREE_NOT_IN_CLONE", {d["code"] for d in report["diagnostics"]})
 
     def test_pending_vault_knowledge_transaction_requires_original_plan(self):
         trust(self.git, self.registry, "read")

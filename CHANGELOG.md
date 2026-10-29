@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-10-29：跨平台 Clone 驗證
+
+- CI 發現遷移 fixture 的一次性 -c core.autocrlf 設定沒有保留到目的地，Linux 隨後正確偵測到 dirty worktree。
+- 改用 clone --config 持久設定並驗證目的地值；新增目的地設定改變後仍須要求審查的回歸案例，保留原 byte／hash 驗收要求。
+
 ### Added — 2026-10-29：第四輪優先項目 3
 
 - 明確的 sdist 文件／測試／示範 manifest、SPDX MIT／license-files、project URLs 與可選 dev 建置依賴。
