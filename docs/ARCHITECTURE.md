@@ -79,6 +79,8 @@ Vault/
 
 ## Git 觀察
 
+git_state.memory_history 是共用 HEAD 證據介面，recover 將同一對 HEAD 的結果快取於該次呼叫，附在每份 source.head_evidence。SAME／MEMORY_ONLY／CODE_CHANGED／UNVERIFIED 與其餘 branch／working tree／完整性檢查分開。只在保存 Commit 為祖先，且有界逐筆 log（含 merge parents）全部限於指定 UAML 檔案時忽略 head 差異；不以淨 diff 隱藏改動再還原。compact 保留證據，migration 使用相同 git_differences，不維護另一套判斷。這不認證技術敘述，也不查詢遠端即時狀態。
+
 使用 [git-rev-parse](https://git-scm.com/docs/git-rev-parse) 識別 Root／worktree，不假設 .git 是資料夾；用 [porcelain status](https://git-scm.com/docs/git-status) 區分 staged、unstaged、untracked 與 conflict。處理 detached HEAD、無 HEAD、shallow clone 與 submodule 邊界。
 
 | 差異 | 解讀 |

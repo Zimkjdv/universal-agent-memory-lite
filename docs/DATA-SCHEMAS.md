@@ -141,6 +141,10 @@ Handoff 正文必備：當前任務、已完成、未完成、主要變更檔案
 
 每項驗證包含方法、時間、passed/failed/not_run/unknown、對應 Commit 與 dirty 狀態、證據位置或摘要、未執行原因。命令是資料，不自動執行。
 
+## 恢復輸出的 HEAD 證據
+
+恢復輸出的 source 可包含 head_evidence：saved_head、current_head、status（SAME／MEMORY_ONLY／CODE_CHANGED／UNVERIFIED）、commit_count，以及未確認時的 reason。這是當次唯讀觀察，不寫回持久記憶、不提高敘述可信度；compact 保留，未知／超限仍產生診斷。既有持久資料 Schema 不因此變更。
+
 ## checkpoint.json
 
 必填 schema_version、project_id、snapshot_id、updated_at、files。files 是路徑與 SHA-256 對應，必須精確涵蓋同批 State/Handoff；hash 使用完成寫入檔案的原始位元組，不含 checkpoint 自己。兩份 frontmatter 的 snapshot_id 必須相同。

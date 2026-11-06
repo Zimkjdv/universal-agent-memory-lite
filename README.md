@@ -88,6 +88,8 @@ trust 預設只授予該專案反向索引讀取；明確使用 `project trust -
 
 `recover --compact` 提供預設最多 32 KiB 的 JSON 接管證據，保留來源與診斷，優先任務／Blockers／下一步，並明示所有截斷。需要完整資料時依來源檔案與 hash 核對；一般 recover 的介面保持原樣。
 
+恢復以 head_evidence 說明保存前 Commit 與目前 HEAD 的關係；只含指定 UAML 記憶／入口檔案或空提交的祖先歷史不誤報過時。程式碼曾改動再還原、分岔、缺失或超限仍要求審查，Git／實際檔案與完整性檢查不省略。
+
 `adapter --agent all` 預覽 Codex／Claude 的獨立手動入口，`--apply --expect-plan` 才建立檔案；兩者共用一份流程，不修改既有 Agent 規範或全域設定。詳見接管指南；真實 Agent 自動載入與雙向對話驗收仍未完成。
 
 `registry audit` 唯讀檢查本機 Registry／已知私有 artifacts 的授權風險，不讀正文、不改 ACL；未知或不完整檢查明示。這是權限稽核，完整安全化仍需作業系統設定與驗收。

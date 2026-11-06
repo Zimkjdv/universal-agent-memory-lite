@@ -57,6 +57,8 @@ checkpoint 保留正文，更新時間／Agent／Git 快照、revision、snapsho
 
 recover／resolve／doctor 為唯讀，不更新 Registry 或索引。recover 輸出歷史資料、來源 hash、完整性及 Git 差異；不執行筆記內容。Vault 不可用時仍嘗試讀 Repo 記憶並回報 DEGRADED。
 
+recover／compact／validate／migration 共用 HEAD 證據：保存前 HEAD 不可能包含之後才提交的 checkpoint，因此若保存 Commit 是目前的祖先，逐筆歷史只觸及標準四檔、UAML 的兩份 .gitattributes、三份標準入口文件，或空提交，則 head_evidence 為 MEMORY_ONLY，不單因 HEAD 改變回報 STALE_MEMORY。正文仍是不可信歷史，checkpoint／branch／working tree／內容指紋仍照常檢查。上限為 128 個 Commit、256 KiB 路徑證據；缺失／分岔／讀取失敗／超限明示 HEAD_UNVERIFIED。只比較最終樹會漏掉程式碼改動後還原，因此此處核對每筆提交及 merge parents；未知 .uaml 腳本不視為記憶。沒有 fetch、外部 diff 或 textconv。
+
 ## 給 Agent 的有界恢復摘要
 
 ```powershell

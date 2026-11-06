@@ -3,7 +3,7 @@ from pathlib import Path
 from .binding import load_project, resolve
 from .errors import UamlError
 from .formats import digest, frontmatter, memory, parse_json, read_bytes, safe_metadata
-from .git_state import Git
+from .git_state import Git, memory_history_paths
 from .paths import inside
 from .project_memory import exclusions, validate_checkpoint
 
@@ -23,6 +23,7 @@ def recover(git: Git, registry_path: Path, body_limit=12 * 1024):
     report["binding"] = resolve(git, registry_path)
     report["diagnostics"].extend(report["binding"]["diagnostics"])
     report["git"] = git.observe(exclusions(manifest))
+    history_cache = {}
     checkpoint = None
     try:
         checkpoint = parse_json(read_bytes(inside(git.root, manifest["memory"]["checkpoint"])))
@@ -42,6 +43,14 @@ def recover(git: Git, registry_path: Path, body_limit=12 * 1024):
                 report["diagnostics"].append({"code": "CHECKPOINT_MISMATCH", "message": f"Saved integrity marker differs for {key}; review before checkpointing."})
             current, saved = report["git"]["snapshot"], header["git"]
             differences = [item for item in ("head", "branch", "working_tree") if current[item] != saved[item]]
+            heads = (saved["head"], current["head"])
+            if heads not in history_cache:
+                history_cache[heads] = git.memory_history(*heads, memory_history_paths(manifest))
+            head_evidence = history_cache[heads]
+            if "head" in differences and head_evidence["status"] == "MEMORY_ONLY":
+                differences.remove("head")
+            elif "head" in differences and head_evidence["status"] == "UNVERIFIED":
+                report["diagnostics"].append({"code": "HEAD_UNVERIFIED", "message": f"Saved/current commit relation is unverified for {key}; review history before continuing."})
             old_fingerprint = saved.get("working_tree_fingerprint")
             if old_fingerprint is not None and current.get("working_tree_fingerprint") is not None and old_fingerprint != current["working_tree_fingerprint"]:
                 differences.append("working_tree_content")
@@ -53,6 +62,7 @@ def recover(git: Git, registry_path: Path, body_limit=12 * 1024):
             excerpt = body_bytes[:body_limit].decode("utf-8", errors="ignore") if body_limit is not None else body
             report["sources"].append({"path": relative, "sha256": digest(raw), "metadata": header,
                                       "checkpoint_verified": integrity, "git_differences": differences,
+                                      "head_evidence": head_evidence,
                                       "untrusted_markdown": excerpt, "truncated": body_limit is not None and len(body_bytes) > body_limit})
         except UamlError as exc:
             report["diagnostics"].append(exc.diagnostic())

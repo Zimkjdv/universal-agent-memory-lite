@@ -13,7 +13,7 @@ uaml --repo . --json migration check --mode local
 uaml --repo . --json migration check --mode local --knowledge
 ```
 
-check 唯讀。MIGRATION_CHECKED exit 0 表示本次來源檢查未發現需處理問題；MIGRATION_REVIEW_REQUIRED exit 1 表示須先審查 diagnostics。它檢查身份、完整 checkpoint、必填章節、Git 與記憶差異、未完成本機 journal、疑似已追蹤的私有 Registry／artifact 路徑；不顯示筆記正文。只含記憶／UAML 入口變更的祖先 Commit 可解釋保存前 HEAD 與目前 HEAD 不同，程式碼／branch／working content 差異仍需核對。
+check 唯讀。MIGRATION_CHECKED exit 0 表示本次來源檢查未發現需處理問題；MIGRATION_REVIEW_REQUIRED exit 1 表示須先審查 diagnostics。它檢查身份、完整 checkpoint、必填章節、Git 與記憶差異、未完成本機 journal、疑似已追蹤的私有 Registry／artifact 路徑；不顯示筆記正文。與一般 recover 共用有界逐筆歷史證據，只含指定記憶／入口檔案的祖先提交可解釋保存前 HEAD 與目前 HEAD 不同；程式碼改過再還原、branch／working content 差異或未知歷史仍需核對。
 
 --knowledge 才使用既有 grant 掃描已授權 Knowledge，檢查關聯與 pending 狀態；省略時明示 NOT_REQUESTED，不代表知識完整或沒有未完成交易。知識掃描沿用 200 entries／16 MiB 上限，私有 checkpoint journal 預檢最多 1024 entries；超限或損壞會要求審查。
 

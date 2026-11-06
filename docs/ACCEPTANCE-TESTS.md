@@ -69,6 +69,10 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名與 Registry 正規化後的長名當不同路徑。已統一 Workspace canonical 根目錄，原本的來源 Vault 零讀取與讀取拒絕斷言保留；這是 fixture 身份比較修正，不放寬正式 Resolver 政策。
 
+### 第五輪項目 1：恢復 HEAD 證據
+
+2026-11-07：完整 206 項測試通過。新增 8 案例，涵蓋記憶提交後 recover／validate／compact 一致、來源共用證據且唯讀、程式碼提交／改動再還原、branch 改變、未知／分岔 Commit、歷史超限及未知 .uaml 腳本。另將 migration 改為共用恢復判斷，保留 bytes／追蹤／授權檢查；34 項針對性測試先通過。歷史讀取明確停用 notes／signature／external diff／textconv 並逐一核對 merge parents，不查詢遠端。這是保存內容與 Git 證據，非技術正確性或真實 Agent 實機驗收。
+
 ## 共通證據
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。

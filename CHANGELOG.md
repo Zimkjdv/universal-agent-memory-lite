@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-07：第五輪優先項目 1
+
+- 一般 recover 與 compact／validate／migration 統一共用有界提交歷史證據，避免記憶提交的 self-reference HEAD 差異誤報過時。
+- head_evidence 保留保存／當前 HEAD、分類及提交數；同一恢復中共用來源證據，不重複查詢。
+- 逐筆歷史／merge parents 保留程式碼改動後還原的過時診斷；分岔、缺失、超限或未知 metadata 腳本不自動放行。
+- 8 個新案例，並更新原本僅 migration 能解釋的記憶提交案例；不降低 Git／checkpoint／branch／內容檢查。
+
 ### Fixed — 2026-10-29：跨平台 Clone 驗證
 
 - CI 發現遷移 fixture 的一次性 -c core.autocrlf 設定沒有保留到目的地，Linux 隨後正確偵測到 dirty worktree。

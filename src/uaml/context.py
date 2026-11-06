@@ -101,6 +101,8 @@ def compact(report, max_bytes=DEFAULT_BUDGET):
                  "checkpoint_verified": source["checkpoint_verified"], "git_differences": source["git_differences"],
                  "metadata": {key: header[key] for key in ("kind", "revision", "snapshot_id", "updated_at")},
                  "sections": []}
+        if "head_evidence" in source:
+            entry["head_evidence"] = source["head_evidence"]
         result["sources"].append(entry)
         text_field(entry["metadata"], "source_agent", header["source_agent"], 128)
         sections = split_sections(source["untrusted_markdown"])

@@ -6,6 +6,15 @@ from .errors import UamlError
 from .formats import digest
 from .paths import inside
 
+MAX_MEMORY_COMMITS = 128
+MAX_HISTORY_BYTES = 256 * 1024
+
+
+def memory_history_paths(manifest):
+    return {".uaml/project.yaml", ".uaml/.gitattributes", "docs/memory/.gitattributes",
+            ".uaml/adapters/WORKFLOW.md", ".uaml/adapters/CODEX.md", ".uaml/adapters/CLAUDE-CODE.md",
+            *(manifest["memory"][key] for key in ("project_state", "handoff", "checkpoint"))}
+
 
 class Git:
     def __init__(self, path: Path):
@@ -41,6 +50,30 @@ class Git:
         remotes = self.run("config", "--local", "--get-regexp", r"^remote\..*\.url$", optional=True) or b""
         return {"repository_root": str(self.root), "git_directory": str(Path(directory).resolve()),
                 "remote_fingerprint": digest(remotes)}
+
+    def memory_history(self, saved, current, allowed_paths):
+        evidence = {"saved_head": saved, "current_head": current, "status": "UNVERIFIED", "commit_count": None}
+        if saved == current:
+            return {**evidence, "status": "SAME"}
+        if not saved or not current:
+            return {**evidence, "reason": "Missing saved/current commit."}
+        try:
+            if self.run("merge-base", "--is-ancestor", saved, current, optional=True) is None:
+                return {**evidence, "reason": "Saved commit is unavailable or is not an ancestor."}
+            count = int(self.run("rev-list", "--count", f"{saved}..{current}", "--"))
+            evidence["commit_count"] = count
+            if count > MAX_MEMORY_COMMITS:
+                return {**evidence, "reason": "Commit history exceeds the 128-commit review budget."}
+            # Inspect every intervening commit, including merge parents; an end
+            # diff alone would hide code edits that were subsequently reverted.
+            raw = self.run("log", "--format=", "--name-only", "-z", "--no-renames", "--diff-merges=separate",
+                           "--no-notes", "--no-show-signature", "--no-ext-diff", "--no-textconv", f"{saved}..{current}", "--")
+            if len(raw) > MAX_HISTORY_BYTES:
+                return {**evidence, "reason": "History path evidence exceeds the 256 KiB review budget."}
+            changed = {p for p in raw.decode("utf-8").split("\0") if p}
+            return {**evidence, "status": "MEMORY_ONLY" if changed.issubset(allowed_paths) else "CODE_CHANGED"}
+        except (UamlError, ValueError, UnicodeError):
+            return {**evidence, "reason": "Commit history could not be verified safely."}
 
     def observe(self, excluded=()):
         def decode(raw):

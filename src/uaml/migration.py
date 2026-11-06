@@ -114,16 +114,6 @@ def check(git, registry_path, mode, include_knowledge=False):
     for source in recovery["sources"]:
         diagnostics.extend(sections(source["untrusted_markdown"], source["metadata"]["kind"], source["path"]))
         differences = set(source["git_differences"])
-        if "head" in differences:
-            saved, current = source["metadata"]["git"]["head"], observation["snapshot"]["head"]
-            known = saved and current and git.run("merge-base", "--is-ancestor", saved, current, optional=True) is not None
-            paths = git.run("diff", "--no-ext-diff", "--no-textconv", "--name-only", "-z", saved, current, "--") if known else None
-            changed = [p for p in (paths.decode("utf-8", errors="replace").split("\0") if paths is not None else []) if p]
-            allowed = set(memory_paths) | set(RULES)
-            # A memory-only commit is expected because a saved HEAD cannot name
-            # the future commit containing the checkpoint itself.
-            if known and all(p in allowed or p.startswith(".uaml/adapters/") for p in changed):
-                differences.remove("head")
         record(source["metadata"]["kind"] + "_freshness", not differences, "STALE_MEMORY", "Current branch, code history or working content differs from saved memory; review and checkpoint current facts.")
     changes = observation["changes"]
     record("working_tree", mode == "local" or not changes, "WORKTREE_NOT_IN_CLONE", "GitHub clone omits local changes; commit/push intended work or choose local-copy mode.")

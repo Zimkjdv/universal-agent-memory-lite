@@ -58,7 +58,9 @@ class MigrationTests(Workspace):
 
     def test_committed_memory_only_head_change_is_explained(self):
         self.committed_source()
-        self.assertTrue(any(d["code"] == "STALE_MEMORY" for d in recover(self.git, self.registry)["diagnostics"]))
+        recovery = recover(self.git, self.registry)
+        self.assertEqual(recovery["status"], "RECOVERED")
+        self.assertTrue(all(s["head_evidence"]["status"] == "MEMORY_ONLY" for s in recovery["sources"]))
         report = migration.check(self.git, self.registry, "github")
         self.assertEqual(report["status"], "MIGRATION_CHECKED", report["diagnostics"])
         self.assertTrue(all(a["same_as_head"] for a in report["artifacts"]))
