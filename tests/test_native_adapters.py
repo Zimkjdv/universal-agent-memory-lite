@@ -178,11 +178,12 @@ class NativeAdapterTests(Workspace):
         (self.repo / "AGENTS.md").write_bytes(b"original shared rules\n")
         (self.repo / "CLAUDE.md").write_bytes(b"original Claude rules\n")
         plan = self.preview()
+        publish = native_adapters.publish
         def interrupted(path, *args):
             if path == self.repo / "CLAUDE.md":
                 raise OSError("fixture interruption")
-            return write(path, *args)
-        with patch("uaml.native_adapters.write", side_effect=interrupted), self.assertRaises(OSError):
+            return publish(path, *args)
+        with patch("uaml.native_adapters.publish", side_effect=interrupted), self.assertRaises(OSError):
             self.apply(plan)
         agents = (self.repo / "AGENTS.md").read_bytes()
         self.assertEqual((self.repo / "CLAUDE.md").read_bytes(), b"original Claude rules\n")
@@ -191,6 +192,45 @@ class NativeAdapterTests(Workspace):
         self.assertEqual([a["action"] for a in fresh["actions"]], ["keep", "append"])
         self.apply(fresh)
         self.assertEqual((self.repo / "AGENTS.md").read_bytes(), agents)
+
+    def test_existing_native_permissions_and_file_identity_are_preserved(self):
+        file = self.repo / "AGENTS.md"
+        original = b"private project instructions\n"
+        file.write_bytes(original)
+        if os.name == "nt":
+            backend = permissions.WindowsAcl()
+            changed = subprocess.run(["icacls", str(file), "/inheritance:r", "/grant:r", f"*{backend.current_sid}:F"], capture_output=True)
+            self.assertEqual(changed.returncode, 0)
+            before_permissions = backend.snapshot(file)
+        else:
+            file.chmod(0o600)
+            before_permissions = file.stat().st_mode
+        before_info = file.stat()
+        self.apply(self.preview("codex"), "codex")
+        self.assertEqual(file.stat().st_ino, before_info.st_ino)
+        self.assertEqual(file.stat().st_dev, before_info.st_dev)
+        self.assertTrue(file.read_bytes().startswith(original))
+        after_permissions = backend.snapshot(file) if os.name == "nt" else file.stat().st_mode
+        self.assertEqual(after_permissions, before_permissions)
+
+    def test_partial_append_reports_failure_preserves_prefix_and_original_backup(self):
+        file = self.repo / "AGENTS.md"
+        original = b"original project rules\n"
+        file.write_bytes(original)
+        plan = self.preview("codex")
+        real_write = os.write
+        def partial(descriptor, data):
+            return real_write(descriptor, data[:len(data) // 2])
+        with patch("uaml.native_adapters.os.write", side_effect=partial), self.assertRaises(UamlError) as caught:
+            self.apply(plan, "codex")
+        self.assertEqual(caught.exception.code, "NATIVE_ENTRY_PARTIAL")
+        self.assertTrue(file.read_bytes().startswith(original))
+        backups = list((self.registry.parent / "adapter-backups").glob("*.before"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(backups[0].read_bytes(), original)
+        with self.assertRaises(UamlError) as conflicted:
+            self.preview("codex")
+        self.assertEqual(conflicted.exception.code, "NATIVE_ENTRY_CONFLICT")
 
     def test_changes_during_backup_preparation_block_all_native_writes(self):
         (self.repo / "AGENTS.md").write_bytes(b"original rules\n")

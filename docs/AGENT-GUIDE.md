@@ -50,11 +50,11 @@ uaml --repo . --json adapter --agent all --native --apply --expect-plan '<plan-h
 
 原生預覽不寫入、不讀 Vault，要求已安裝且內容匹配的共用入口。計畫綁定 Manifest、checkout／Remote、原生檔、共用檔原始 hash、匯入依賴及私人備份位置。原生檔保留所有原始 bytes，追加時沿用一致 CRLF；UTF-8 BOM 保留。32 KiB 是單檔上限，Agent 合併後的上下文預算仍需另行核對。
 
-套用先在 Registry 同層 adapter-backups/ 保存每份既有原文，再核對完整計畫、逐檔以 expected hash 公布。備份子目錄新建時受限；既有備份目錄權限若無法確認則停止，不自動改 ACL。備份列入 registry audit，JSON 結果的 backups 提供原文位置；請勿把含私有內容的備份或輸出提交公開 Git。原生引用本身只有可攜式相對路徑。
+套用先在 Registry 同層 adapter-backups/ 保存每份既有原文，再核對完整計畫。既有檔案以同一 file identity 開啟、核對全文後只追加，保留原 ACL／mode；不以整檔替換繼承父目錄權限。新檔案採 create-only 原子公布。備份子目錄新建時受限；既有備份目錄權限若無法確認則停止，不自動改 ACL。Registry 存在時，備份列入 registry audit；JSON 結果的 backups 提供原文位置。請勿把含私有內容的備份或輸出提交公開 Git。原生引用本身只有可攜式相對路徑。
 
 相同引用再次套用不重複追加。自訂／不完整／重複／藏在 code fence 的 UAML 標記、未閉合 fence/comment、硬連結／符號連結、疑似憑證或檔案變動會拒絕自動處理。存在 AGENTS.override.md 時 Codex 自動整合拒絕套用，請保留 override 並改用手動啟用或人工審閱整合；工具不修改它。全域或更深層 override、Claude 指令載入設定與排除仍需實機確認。
 
-多檔追加不是跨檔原子交易。若中斷，核對原文備份及當前檔案，重新預覽；已存在的相同引用保留，其餘才追加，不自動 rollback。要撤回時，人工比較當前檔案與原文備份，只移除已審核的 UAML 引用／匯入，保留之後的新成果，避免直接用舊備份覆蓋整檔。
+既有檔案追加與多檔操作不宣稱 crash-atomic。短寫入會回報 NATIVE_ENTRY_PARTIAL；錯誤或中斷時原始前綴及私人備份保留，先核對當前內容。半段標記拒絕自動處理，需人工整理；完整相同引用則可重新預覽保留，其餘才追加，不自動 rollback。要撤回時，人工比較當前檔案與原文備份，只移除已審核的 UAML 引用／匯入，保留之後的新成果，避免直接用舊備份覆蓋整檔。非合作程序的所有編輯競態不在隔離保證內。
 
 套用成功後開新對話，確認 Agent 確實讀到原生引用、條件觸發時讀共享入口並核對 Git。若未載入，使用上方手動提示；不以測試產生檔案當作 T01／T02 已通過。
 

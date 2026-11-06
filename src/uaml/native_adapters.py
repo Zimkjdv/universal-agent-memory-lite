@@ -1,6 +1,7 @@
 """Opt-in short references appended to native project instructions after review."""
 import os
 import re
+import stat
 
 from .adapters import files_for
 from .binding import load_project
@@ -123,6 +124,35 @@ def preview(git, registry_path, agent):
     return _prepare(git, registry_path, agent)[0]
 
 
+def publish(path, before, after):
+    if before is None:
+        return write(path, after, None)
+    # Replacing an existing instruction file would inherit parent permissions.
+    # Append through the same inode instead, with a saved original and CAS checks.
+    plain(path)
+    prior_info = path.stat()
+    flags = os.O_RDWR | os.O_APPEND | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags)
+    with os.fdopen(descriptor, "r+b", buffering=0) as stream:
+        info = os.fstat(stream.fileno())
+        if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                or (info.st_dev, info.st_ino) != (prior_info.st_dev, prior_info.st_ino)
+                or stream.read(MAX_ENTRY_BYTES + 1) != before):
+            raise UamlError("WRITE_CONFLICT", "Native entry changed before append; original backup is preserved.")
+        addition = after[len(before):]
+        written = os.write(stream.fileno(), addition)
+        os.fsync(stream.fileno())
+        if written != len(addition):
+            raise UamlError("NATIVE_ENTRY_PARTIAL", "Native append was incomplete; inspect the file and private original backup before retrying.")
+        stream.seek(0)
+        current = stream.read(MAX_ENTRY_BYTES + 1)
+        plain(path)
+        final_info = path.stat()
+        if (current != after or (info.st_dev, info.st_ino) != (final_info.st_dev, final_info.st_ino)
+                or read_bytes(path) != after):
+            raise UamlError("WRITE_CONFLICT", "Native entry changed during append; inspect current content and the original backup. No rollback was attempted.")
+
+
 def install(git, registry_path, agent, expected_plan):
     if not expected_plan:
         raise UamlError("PLAN_REQUIRED", "Preview native references, then explicitly pass --expect-plan.")
@@ -163,6 +193,6 @@ def install(git, registry_path, agent, expected_plan):
                 if action["action"] != "keep":
                     path = inside(git.root, action["path"])
                     plain(path)
-                    write(path, prepared[action["path"]][1], action["before_hash"])
+                    publish(path, *prepared[action["path"]])
     return {**report, "status": "NATIVE_ADAPTER_INSTALLED", "backups": backups,
             "next_step": "Start a new agent session and confirm the reference and shared workflow are read. T01/T02 remain unverified."}

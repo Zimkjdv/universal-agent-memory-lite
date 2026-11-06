@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-07：原生引用的權限保留
+
+- 既有原生指令檔改為核對 file identity／原文後只追加，保留原 ACL／mode，避免整檔替換繼承較寬的父目錄權限；新檔仍為 create-only 原子公布。
+- 原文先備份，短寫入明確失敗，保留原始前綴並拒絕半段標記的自動續做；文件明示追加不保證 crash-atomic。
+- 新增原生 Windows DACL／Unix mode／file identity 保留及部分追加故障注入案例，共 20 項原生入口測試。
+
 ### Added — 2026-11-07：第五輪優先項目 3
 
 - adapter --native：獨立唯讀預覽及明確 hash 套用原生 AGENTS.md／CLAUDE.md 條件式短引用；共享流程維持單一來源。

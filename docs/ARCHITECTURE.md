@@ -128,7 +128,7 @@ migration.py 提供來源預檢（不複製資料），GitHub 模式比對目前
 
 adapters.py 管理獨立手動入口：.uaml/adapters/WORKFLOW.md 保存一份 UAML 流程，CODEX.md／CLAUDE-CODE.md 是條件式指標。預覽不讀 Vault；套用只建立缺失檔，已有不同內容拒絕覆蓋，計畫綁定當前 Manifest／Git／目標 hash。
 
-native_adapters.py 是獨立 --native 選配層；要求共享入口已匹配，先預覽 AGENTS.md／CLAUDE.md 追加內容，再明確 hash 套用。保留原 bytes，私有 adapter-backups 原文先保存，重新核對計畫後逐檔公布；中斷重新預覽而不自動回滾。新 CLAUDE.md 明示匯入共享 AGENTS.md 避免規範被遮蔽；Codex root override 存在時拒絕自動追加。原生載入依 Agent 實際版本／設定與大小預算，真實接管尚未驗收。流程與限制見 [接管指南](AGENT-GUIDE.md)。
+native_adapters.py 是獨立 --native 選配層；要求共享入口已匹配，先預覽 AGENTS.md／CLAUDE.md 追加內容，再明確 hash 套用。保留原 bytes，私有 adapter-backups 原文先保存；重新核對計畫後，既有檔案在同一 file identity 上只追加以保留 ACL／mode，新檔 create-only 公布。追加不宣稱 crash-atomic，短寫入明確失敗、保留原前綴與備份；中斷核對後重新預覽而不自動回滾。新 CLAUDE.md 明示匯入共享 AGENTS.md 避免規範被遮蔽；Codex root override 存在時拒絕自動追加。原生載入依 Agent 實際版本／設定與大小預算，真實接管尚未驗收。流程與限制見 [接管指南](AGENT-GUIDE.md)。
 
 手動「恢復此專案」為必備。經批准可加入短的專案入口引用；Skills／Hooks 選配。不得複製兩套開發規範，或用 AGENTS.override.md 壓過既有規則。依實際 Claude 版本及 CLAUDE.md 載入情況決定薄適配。
 

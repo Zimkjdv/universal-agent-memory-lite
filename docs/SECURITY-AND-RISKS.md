@@ -79,7 +79,7 @@ Registry／備份限制目前使用者，不放寬 ACL。備份舊內容前同�
 
 ## 必要驗證
 
-原生適配為獨立 --native 明確預覽／套用：只追加已審核的固定引用，保留既有原文。原文備份在本機 adapter-backups/，建立時受限並確認權限，且納入 audit；疑似憑證在備份前拒絕。依賴及完整原檔 hash 改變即拒絕，不以知識正文生成指令。Agent 的原生規範仍是指令，記憶資料仍是不可信歷史資料；產生入口不賦予 Vault 存取權，也不等於已驗證自動載入。
+原生適配為獨立 --native 明確預覽／套用：只追加已審核的固定引用，保留既有原文。原文備份在本機 adapter-backups/，建立時受限並確認權限，且納入 audit；疑似憑證在備份前拒絕。依賴及完整原檔 hash 改變即拒絕，不以知識正文生成指令。既有檔案核對 file identity 後只追加，保留原有 ACL／mode，避免原子替換繼承較寬的父權限；短寫入／中斷保留原前綴及備份，不宣稱 crash-atomic 或非合作程序隔離。Agent 的原生規範仍是指令，記憶資料仍是不可信歷史資料；產生入口不賦予 Vault 存取權，也不等於已驗證自動載入。
 
 2026-11-07 加入新 home 的受限建立：Windows 使用 [CreateDirectoryW 的 security attributes](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createdirectoryw)，搭配 [SDDL 轉換](https://learn.microsoft.com/en-us/windows/win32/api/sddl/nf-sddl-convertstringsecuritydescriptortosecuritydescriptorw) 與 protected DACL。先確認 persistent ACL，再建立並重新稽核，避免先建立一般目錄再收緊的空窗。Unix 以 0700 建立並重新檢查。只影響新目錄，不呼叫 ACL 修改 API；既有 home 的風險仍由稽核指出，不自動搬移或收緊。
 

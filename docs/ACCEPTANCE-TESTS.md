@@ -100,7 +100,7 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 ## 補充邊界案例
 
-- 2026-11-07 新增 18 項原生入口案例：唯讀預覽／零 Vault 讀取、原文／BOM／CRLF／備份權限、CLAUDE 匯入不複製規範、Agent 條件、冪等、原檔／依賴／備份位置變動、手動入口必要性、override、標記／fence／comment、假秘密、hard link、大小預算、未核准、備份 ACL、中斷續做、備份時人工改動及 CLI。這些是程式層安全與契約測試，不是 T01／T02 實機接管通過證據。
+- 2026-11-07 新增 20 項原生入口案例：唯讀預覽／零 Vault 讀取、原文／BOM／CRLF／備份權限、CLAUDE 匯入不複製規範、Agent 條件、冪等、原檔／依賴／備份位置變動、手動入口必要性、override、標記／fence／comment、假秘密、hard link、大小預算、未核准、備份 ACL、中斷續做、備份時人工改動、CLI，以及實際 Windows DACL／Unix mode／file identity 保留及短寫入故障注入。這些是程式層安全與契約測試，不是 T01／T02 實機接管通過證據。
 
 - 2026-11-07 新增 13 項私有 home 測試：新 Registry 初始化、既有目錄／重複 init 拒絕、不變父目錄、缺失祖先、權限失敗、未確認權限、目錄／檔案建立競態、Repo 邊界、CLI、原生 Windows Everyone 父授權不繼承、Unix 0700，以及離線 checkpoint。平台專屬案例在其他 OS 明示 skip；不替代 Windows 11 實機證據。
 
