@@ -21,6 +21,7 @@ from . import adapters
 from . import supersession
 from . import permissions
 from . import migration
+from . import native_adapters
 
 
 def parser():
@@ -48,6 +49,7 @@ def parser():
     adapter = commands.add_parser("adapter", help="preview/install independent manual agent entry files")
     adapter.add_argument("--agent", choices=("codex", "claude-code", "all"), required=True)
     adapter.add_argument("--apply", action="store_true")
+    adapter.add_argument("--native", action="store_true", help="opt-in reviewed short references in AGENTS.md/CLAUDE.md")
     adapter.add_argument("--expect-plan")
     verify = commands.add_parser("validate", help="read-only binding, memory, checkpoint and optional knowledge checks")
     verify.add_argument("--knowledge", action="store_true", help="include the explicitly authorized knowledge area")
@@ -153,6 +155,11 @@ def dispatch(args):
             return context.recover_context(git, registry_path, args.max_bytes if args.max_bytes is not None else context.DEFAULT_BUDGET)
         return recover(git, registry_path)
     if args.command == "adapter":
+        if args.native:
+            if args.expect_plan and not args.apply:
+                raise UamlError("COMMAND_INVALID", "--expect-plan requires --apply.")
+            return (native_adapters.install(git, registry_path, args.agent, args.expect_plan) if args.apply
+                    else native_adapters.preview(git, registry_path, args.agent))
         if args.apply:
             return adapters.install(git, args.agent, args.expect_plan)
         if args.expect_plan:
@@ -311,4 +318,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace", newline="\n")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED", "ADAPTER_PREVIEW", "ADAPTER_INSTALLED", "ADAPTER_ALREADY_INSTALLED", "SUPERSESSION_PREVIEW", "SUPERSESSION_APPLIED", "SUPERSESSION_ALREADY_APPLIED", "PERMISSIONS_RESTRICTED", "REGISTRY_INITIALIZED", "MIGRATION_CHECKED", "MIGRATION_RULES_PREVIEW", "MIGRATION_RULES_INSTALLED"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED", "NATIVE_ADAPTER_PREVIEW", "NATIVE_ADAPTER_INSTALLED", "NATIVE_ADAPTER_ALREADY_INSTALLED", "ADAPTER_PREVIEW", "ADAPTER_INSTALLED", "ADAPTER_ALREADY_INSTALLED", "SUPERSESSION_PREVIEW", "SUPERSESSION_APPLIED", "SUPERSESSION_ALREADY_APPLIED", "PERMISSIONS_RESTRICTED", "REGISTRY_INITIALIZED", "MIGRATION_CHECKED", "MIGRATION_RULES_PREVIEW", "MIGRATION_RULES_INSTALLED"} else 1

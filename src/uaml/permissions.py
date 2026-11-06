@@ -6,7 +6,7 @@ from itertools import islice
 from .errors import UamlError
 from .paths import inside, require_private_registry
 
-PRIVATE_DIRS = ("backups", "transactions", "proposals", "forks", "supersessions", "cache")
+PRIVATE_DIRS = ("backups", "transactions", "proposals", "forks", "supersessions", "cache", "adapter-backups")
 MAX_TARGETS = 1024
 
 

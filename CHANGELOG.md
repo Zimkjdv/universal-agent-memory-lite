@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-11-07：第五輪優先項目 3
+
+- adapter --native：獨立唯讀預覽及明確 hash 套用原生 AGENTS.md／CLAUDE.md 條件式短引用；共享流程維持單一來源。
+- 新 CLAUDE.md 明示匯入共享 AGENTS.md，避免原生載入規則遮蔽原有規範；Codex root override 存在時拒絕自動追加。
+- 保留原始 bytes／BOM／換行，先保存受限私有原文備份，重新核對依賴／原檔／計畫後逐檔追加；相同引用冪等，中斷以新預覽續做。
+- 自訂／重複／不完整或 fenced 標記、未閉合 Markdown、連結、憑證、超限、變動及未確認備份權限均拒絕；18 個新案例，不自動修改真實專案規範或全域設定。
+
 ### Added — 2026-11-07：第五輪優先項目 2
 
 - registry init 明確建立全新的私有 Registry home；register 與離線 checkpoint 首次建立 home 時共用保護。

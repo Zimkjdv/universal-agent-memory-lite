@@ -61,6 +61,8 @@ recover／compact／validate／migration 共用 HEAD 證據：保存前 HEAD 不
 
 ## 給 Agent 的有界恢復摘要
 
+Codex／Claude 的獨立入口與明確 --native 預覽／套用流程見 [接管指南](docs/AGENT-GUIDE.md)。原生套用會追加 AGENTS.md／CLAUDE.md 引用，先保存私人原文備份；預設手動入口不改既有規範。真實新對話載入仍需實測。
+
 ```powershell
 & $pythonPath --repo $repoPath --registry $registryPath --json recover --compact
 & $pythonPath --repo $repoPath --registry $registryPath recover --compact --max-bytes 8192
@@ -226,7 +228,7 @@ Windows 要求檔案系統支援 persistent ACL，於建立時套用受保護 DA
 & $pythonPath --registry $registryPath --json registry audit
 ```
 
-不需要 Git 專案、不建立缺失 Registry。只檢查 Registry 所在目錄／檔案，以及已知 backups、transactions、proposals、forks、supersessions、cache 子目錄與其中一層 artifacts，最多 1024 個項目；不讀正文、不掃描 Vault、不改 ACL、擁有者或設定。其他根目錄檔案不在本次範圍，結果不可當作整部電腦安全認證。
+不需要 Git 專案、不建立缺失 Registry。只檢查 Registry 所在目錄／檔案，以及已知 backups、transactions、proposals、forks、supersessions、cache、adapter-backups 子目錄與其中一層 artifacts，最多 1024 個項目；不讀正文、不掃描 Vault、不改 ACL、擁有者或設定。其他根目錄檔案不在本次範圍，結果不可當作整部電腦安全認證。
 
 Windows 使用原生 owner／DACL API，將目前程序使用者、SYSTEM 與本機 Administrators 視為特權受信主體。其他 allow ACE／owner 列為風險，包含 inherit-only grants；這是保守授權稽核，不計算 deny 順序、群組成員及條件 ACE 的完整有效存取。未知 ACE、空 DACL、權限不足、連結／多 hard links／巢狀 artifacts 或超限均需人工核對，不誤報通過。Unix 類系統檢查 owner／group-other mode，存在或無法檢查 extended ACL 時明示未確認。
 
