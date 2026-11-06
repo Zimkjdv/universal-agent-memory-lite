@@ -160,6 +160,7 @@ def _save(git, registry_path, manifest, agent, initial):
     # repair can finish the same snapshot without inventing unsaved information.
     prepared[manifest["memory"]["checkpoint"]] = json_bytes(checkpoint_value)
     originals[manifest["memory"]["checkpoint"]] = old_checkpoint
+    registry.ensure_home(registry_path)
     entries = []
     for index, (relative, data) in enumerate(prepared.items()):
         after_blob = f"transactions/{snapshot_id}.{index}.after"

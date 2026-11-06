@@ -7,6 +7,7 @@ from .formats import (digest, fields, identifier, json_bytes, now, parse_json,
                       parse_yaml, read_bytes, string, text, timestamp, vault)
 from .paths import inside, local_key, require_private_registry
 from .storage import lock, write
+from .private_storage import ensure_home
 
 
 def empty():
@@ -94,6 +95,7 @@ def load(path: Path, allow_missing=False):
 
 def update(path: Path, change):
     require_private_registry(path)
+    ensure_home(path)
     with lock(path.with_name(path.name + ".lock")):
         try:
             old = read_bytes(path, "REGISTRY_MISSING")
@@ -108,6 +110,17 @@ def update(path: Path, change):
         validate(value)
         write(path, json_bytes(value), digest(old) if old is not None else None, path.parent / "backups")
     return value
+
+
+def initialize(path: Path):
+    created = ensure_home(path, new_only=True)
+    value = empty()
+    with lock(path.with_name(path.name + ".lock")):
+        write(path, json_bytes(value), None)
+    return {"status": "REGISTRY_INITIALIZED", "registry_path": str(path),
+            "created_directories": [str(directory) for directory in created], "revision": value["revision"],
+            "limitations": ["Only newly created directories were protected; existing parent permissions were preserved.",
+                            "This does not isolate the same user, SYSTEM or administrators; run registry audit after changes."]}
 
 
 def read_vault(path: Path):

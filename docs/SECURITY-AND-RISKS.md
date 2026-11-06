@@ -79,6 +79,10 @@ Registry／備份限制目前使用者，不放寬 ACL。備份舊內容前同�
 
 ## 必要驗證
 
+2026-11-07 加入新 home 的受限建立：Windows 使用 [CreateDirectoryW 的 security attributes](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createdirectoryw)，搭配 [SDDL 轉換](https://learn.microsoft.com/en-us/windows/win32/api/sddl/nf-sddl-convertstringsecuritydescriptortosecuritydescriptorw) 與 protected DACL。先確認 persistent ACL，再建立並重新稽核，避免先建立一般目錄再收緊的空窗。Unix 以 0700 建立並重新檢查。只影響新目錄，不呼叫 ACL 修改 API；既有 home 的風險仍由稽核指出，不自動搬移或收緊。
+
+此保護不涵蓋惡意同使用者程序、管理員、共享父目錄擁有者的刪除／替換能力、檔案系統／同步工具後續改動，或跨機分散式隔離。建立中斷可能留下受限空目錄，不自動刪除；再次明確 init 會拒絕既有 home。
+
 2026-10-29 已加入唯讀 registry audit，檢查指定本機 Registry 目錄／檔案與已知私有 artifacts；結果不是完整 effective-access 或 ACL 自動強化。Windows 依 [GetNamedSecurityInfoW](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getnamedsecurityinfow) 讀 owner／DACL，再逐項檢查 ACE，不呼叫外部權限腳本或改 privileges。null DACL 與空 DACL 分別回報風險與無存取待核對，依 [Microsoft 定義](https://learn.microsoft.com/en-us/windows/win32/secauthz/null-dacls-and-empty-dacls)。其他 allow grant 保守列為風險，未知 ACE／讀取失敗／超限列未確認；不以 allow/deny 的簡化判斷宣稱完整有效權限。SYSTEM／Administrators 視為 OS 特權主體，不能隔離它們或同使用者程序。
 
 Windows ACL、junction/symlink、檔案佔用、鎖持有、並行寫入、半完成 checkpoint、手動修改後復原、惡意筆記與假 Token、未知 Schema。完整案例見 [驗收計畫](ACCEPTANCE-TESTS.md)。

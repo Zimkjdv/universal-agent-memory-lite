@@ -179,7 +179,7 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 - 遺留 `.uaml/write.lock` 或 Registry `.lock`：先確認沒有活程序，不自動刪除或按鎖齡搶鎖。
 - 半完成 checkpoint：停止重存，使用下列預覽／套用流程；不要盲目刪除 checkpoint 或搶鎖。
 - 雛形只接受標準三個 docs/memory 路徑；自訂路徑尚未開放。
-- 讀寫限本機合作程序。Windows ACL 保護依目前使用者目錄繼承，完整權限強化與非合作編輯競態仍待驗收。
+- 讀寫限本機合作程序。新建私有 home 有受限權限保護，既有目錄保持原權限；非合作編輯競態仍待驗收。
 
 ## 中斷 checkpoint 的安全復原
 
@@ -209,6 +209,18 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 適配入口以 `adapter --agent codex/claude-code/all` 預覽，再加 --apply --expect-plan 套用；命令中的斜線表示三個選項擇一。操作與啟用方式見 [Codex／Claude 接管指南](docs/AGENT-GUIDE.md)。建立入口不代表已設定原生自動載入。
 
 ## 本機 Registry 權限稽核
+
+新電腦可以先明確初始化一個尚不存在的私人目錄；不需 Git 或 Vault：
+
+```powershell
+& $pythonPath --registry $registryPath --json registry init
+```
+
+registry init 只接受新 home，既有目錄回報 PRIVATE_HOME_EXISTS，不覆蓋 Registry、不改既有 ACL。vault register 及離線 checkpoint 需要首次建立 home 時也使用相同保護；checkpoint 不會憑空建立 Registry 或替代 Vault。
+
+Windows 要求檔案系統支援 persistent ACL，於建立時套用受保護 DACL，僅允許目前使用者、SYSTEM 與本機 Administrators，並讓子目錄／檔案繼承。Unix 新目錄以 0700 建立，owner／mode／extended ACL 不能確認時拒絕保存。需要的新父目錄同樣受限，已存在父目錄不變。失敗或競態時不寫私人 payload；可能留下已建立的空目錄，請核對後重試。這不隔離同使用者程序或 OS 管理者，也不提供加密。
+
+既有 home 不會被自動強化，日後手動／外部建立的 artifacts 也可能有不同權限；仍應執行稽核：
 
 ```powershell
 & $pythonPath --registry $registryPath --json registry audit

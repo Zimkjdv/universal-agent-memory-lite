@@ -35,7 +35,7 @@ T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀�
 
 ### 第二輪項目 2：獨立 Fork 身份
 
-2026-10-22：完整自動測試 113 項通過。新增 12 案例，涵蓋新 IDs／空白記憶／重新授權、Repo／Vault 預覽無變更、來源 Vault 離線且零讀取、原 Repo／索引不變、staged／unstaged 與 Agent 規範保留、人工變更／payload／Remote 衝突、目標明確性、中斷續做、原檔封存及 CLI。T16 的實際 GitHub Fork／跨機與所有外部編輯競態仍待驗收。
+2026-10-22：完整自動測試 113 項通過。新增 13 案例，涵蓋新 IDs／空白記憶／重新授權、Repo／Vault 預覽無變更、來源 Vault 離線且零讀取、原 Repo／索引不變、staged／unstaged 與 Agent 規範保留、人工變更／payload／Remote 衝突、目標明確性、中斷續做、原檔封存及 CLI。T16 的實際 GitHub Fork／跨機與所有外部編輯競態仍待驗收。
 
 ### 第二輪項目 3：Vault 副本內容衝突
 
@@ -99,6 +99,8 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 | T16 Rename & Fork | 改名、Remote 變更、保留原 Manifest 的 Fork | 分別解析、確認搬遷或新身份 | 搬遷保留 ID；未核准 Fork 零私人內容讀取；獨立 Fork 新 ID |
 
 ## 補充邊界案例
+
+- 2026-11-07 新增 13 項私有 home 測試：新 Registry 初始化、既有目錄／重複 init 拒絕、不變父目錄、缺失祖先、權限失敗、未確認權限、目錄／檔案建立競態、Repo 邊界、CLI、原生 Windows Everyone 父授權不繼承、Unix 0700，以及離線 checkpoint。平台專屬案例在其他 OS 明示 skip；不替代 Windows 11 實機證據。
 
 - worktree、detached HEAD、無 HEAD、shallow clone、merge conflict、submodule 邊界。
 - 中文／空白／長檔名、大小寫別名、CRLF、junction/symlink 越界。

@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### Added — 2026-11-07：第五輪優先項目 2
+
+- registry init 明確建立全新的私有 Registry home；register 與離線 checkpoint 首次建立 home 時共用保護。
+- Windows 在 CreateDirectoryW 當下套用受保護、可繼承的使用者／SYSTEM／Administrators DACL，檢查 persistent ACL 支援並重新讀取驗證；Unix 使用 0700 並核對 owner／mode／extended ACL。
+- 既有目錄不改權限、不當成已強化；建立競態、未確認 ACL 或失敗均停止私人 payload 寫入，保留空目錄供檢查。
+- 新增 13 案例，含真實 Windows Everyone 父目錄授權與子檔繼承，以及無 Registry 的 checkpoint。
+
 ### Fixed — 2026-11-07：第五輪優先項目 1
 
 - 一般 recover 與 compact／validate／migration 統一共用有界提交歷史證據，避免記憶提交的 self-reference HEAD 差異誤報過時。

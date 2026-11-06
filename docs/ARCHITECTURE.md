@@ -124,6 +124,8 @@ migration.py 提供來源預檢（不複製資料），GitHub 模式比對目前
 
 ## Agent 適配
 
+本機 private_storage.py 統一建立新的 Registry home：Windows 原子 DACL、Unix 0700，驗證失敗不保存私人 payload。registry init 為明確的新目錄入口；register 及 checkpoint 首次建立 home 時共用。保留既有目錄 ACL，不替既有資料宣稱權限已強化。
+
 已實作 adapters.py 的預覽／明確套用：.uaml/adapters/WORKFLOW.md 保存一份 UAML 流程，CODEX.md／CLAUDE-CODE.md 是條件式指標。預覽不讀 Vault；套用只建立缺失檔，已有不同內容拒絕覆蓋，計畫綁定當前 Manifest／Git／目標 hash。無自動 native 設定、全域設定或權限變更。啟用與人工選配引用見 [接管指南](AGENT-GUIDE.md)。
 
 手動「恢復此專案」為必備。經批准可加入短的專案入口引用；Skills／Hooks 選配。不得複製兩套開發規範，或用 AGENTS.override.md 壓過既有規則。依實際 Claude 版本及 CLAUDE.md 載入情況決定薄適配。

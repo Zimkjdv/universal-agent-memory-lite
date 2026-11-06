@@ -31,6 +31,7 @@ def parser():
     result.add_argument("--json", action="store_true", help="structured output, including errors")
     commands = result.add_subparsers(dest="command", required=True)
     local_registry = commands.add_parser("registry").add_subparsers(dest="action", required=True)
+    local_registry.add_parser("init", help="initialize a new private home; never harden an existing directory")
     local_registry.add_parser("audit", help="read-only local Registry and private artifact permission audit")
     moves = commands.add_parser("migration").add_subparsers(dest="action", required=True)
     preflight = moves.add_parser("check", help="read-only source preflight; never copy or publish")
@@ -118,7 +119,7 @@ def parser():
 def dispatch(args):
     registry_path = registry_location(args.registry)
     if args.command == "registry":
-        return permissions.audit(registry_path)
+        return registry.initialize(registry_path) if args.action == "init" else permissions.audit(registry_path)
     if args.command == "vault":
         if args.action in ("compare", "select"):
             git = Git(args.repo)
@@ -310,4 +311,4 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace", newline="\n")
     print(output)
-    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED", "ADAPTER_PREVIEW", "ADAPTER_INSTALLED", "ADAPTER_ALREADY_INSTALLED", "SUPERSESSION_PREVIEW", "SUPERSESSION_APPLIED", "SUPERSESSION_ALREADY_APPLIED", "PERMISSIONS_RESTRICTED", "MIGRATION_CHECKED", "MIGRATION_RULES_PREVIEW", "MIGRATION_RULES_INSTALLED"} else 1
+    return 0 if value["status"] in {"OK", "RESOLVED", "RECOVERED", "TRUSTED", "VAULT_INITIALIZED", "VAULT_REGISTERED", "PROJECT_INITIALIZED", "CHECKPOINT_SAVED", "REPAIR_PREVIEW", "REPAIR_NOT_NEEDED", "REPAIRED", "KNOWLEDGE_ADDED", "KNOWLEDGE_FOUND", "KNOWLEDGE_RESULTS", "KNOWLEDGE_DUPLICATE", "KNOWLEDGE_PROPOSED", "KNOWLEDGE_APPLIED", "VALIDATED", "FORK_PREVIEW", "FORK_APPLIED", "FORK_ALREADY_APPLIED", "REPLICA_EQUIVALENT", "REPLICA_SELECTED", "ADAPTER_PREVIEW", "ADAPTER_INSTALLED", "ADAPTER_ALREADY_INSTALLED", "SUPERSESSION_PREVIEW", "SUPERSESSION_APPLIED", "SUPERSESSION_ALREADY_APPLIED", "PERMISSIONS_RESTRICTED", "REGISTRY_INITIALIZED", "MIGRATION_CHECKED", "MIGRATION_RULES_PREVIEW", "MIGRATION_RULES_INSTALLED"} else 1
