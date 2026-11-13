@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-14：Windows 檔案佔用診斷
+
+- 恢復與安全寫入可辨識 Windows 分享／鎖定衝突 `FILE_IN_USE`，實際權限拒絕保留讀寫方向。檔案釋放後可使用既有 repair 完成待處理 checkpoint。
+
 ### Fixed — 2026-11-14：大型知識搜尋的讀取上限
 
 - 知識搜尋在讀取時就套用 16 MiB 預算，並計入格式錯誤的筆記。超出時最多多讀一個判定用 byte 並回報 `SCAN_LIMIT`。

@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+import unittest
 from pathlib import Path
 
 from uaml.errors import UamlError
@@ -115,6 +116,66 @@ class CliTests(Workspace):
         process, result = self.cli("recover")
         self.assertEqual(process.returncode, 0, result)
         self.assertEqual(result["sources"][0]["metadata"]["source_agent"], "claude-code")
+
+    @unittest.skipUnless(os.name == "nt", "Windows sharing modes")
+    def test_checkpoint_reports_file_in_use_and_can_repair_after_handle_closes(self):
+        self.bind()
+        target = self.repo / "docs/memory/HANDOFF.md"
+        original = target.read_bytes()
+        # A normal Windows reader allows reads but prevents replacing the file.
+        with target.open("rb"):
+            process, result = self.cli("checkpoint", "--agent", "codex")
+            self.assertEqual(process.returncode, 1, result)
+            self.assertEqual(result["status"], "FILE_IN_USE", result)
+            self.assertEqual(target.read_bytes(), original)
+        _, report = self.cli("recover")
+        self.assertEqual(report["status"], "DEGRADED")
+        transaction = next(item["message"].split()[1] for item in report["diagnostics"]
+                           if item["code"] == "CHECKPOINT_TRANSACTION_PENDING")
+        _, plan = self.cli("repair", "--transaction", transaction)
+        process, result = self.cli("repair", "--transaction", transaction, "--apply", "--expect-plan", plan["plan_hash"])
+        self.assertEqual(process.returncode, 0, result)
+        self.assertEqual(result["status"], "REPAIRED")
+        self.assertEqual(self.cli("recover")[1]["status"], "RECOVERED")
+
+    @unittest.skipUnless(os.name == "nt", "Windows read-only file attribute")
+    def test_checkpoint_reports_write_denied_for_read_only_file(self):
+        self.bind()
+        target = self.repo / "docs/memory/HANDOFF.md"
+        original = target.read_bytes()
+        target.chmod(0o444)
+        try:
+            process, result = self.cli("checkpoint")
+            self.assertEqual(process.returncode, 1, result)
+            self.assertEqual(result["status"], "WRITE_DENIED", result)
+            self.assertEqual(target.read_bytes(), original)
+        finally:
+            target.chmod(0o644)
+
+    @unittest.skipUnless(os.name == "nt", "Windows exclusive handle")
+    def test_recover_reports_locked_note_and_preserves_available_source(self):
+        self.bind()
+        target = self.repo / "docs/memory/HANDOFF.md"
+        import ctypes
+        from ctypes import wintypes
+
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        create = kernel.CreateFileW
+        create.argtypes = (wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                           wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE)
+        create.restype = wintypes.HANDLE
+        close = kernel.CloseHandle
+        close.argtypes, close.restype = (wintypes.HANDLE,), wintypes.BOOL
+        handle = create(str(target), 0x80000000, 0, None, 3, 0, None)  # GENERIC_READ, no sharing, OPEN_EXISTING
+        self.assertNotEqual(handle, ctypes.c_void_p(-1).value, ctypes.get_last_error())
+        try:
+            result, report = self.cli("recover")
+            self.assertEqual(result.returncode, 1, report)
+            self.assertEqual(report["status"], "DEGRADED")
+            self.assertIn("FILE_IN_USE", {item["code"] for item in report["diagnostics"]})
+            self.assertEqual([source["path"] for source in report["sources"]], ["docs/memory/PROJECT-STATE.md"])
+        finally:
+            close(handle)
 
     def test_cli_missing_vault_register_does_not_create_directory(self):
         absent = self.base / "absent"

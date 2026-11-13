@@ -2,7 +2,7 @@
 
 狀態：已實作雛形的唯讀解析、Registry、候選選擇、trust 與 relocate；下列為完整設計契約，未完成部分另列。Resolver 不建立 Vault、不改 ID、不修改綁定或全域設定。
 
-grant 預設只開放 project_link，pin Manifest／Vault 身份檔 hash；明確 --knowledge read/write 可開放 layout.knowledge 子樹。多候選需明確位置；初步選擇後，Resolver 有界比對已註冊副本的身份及本專案索引，分歧回報 REPLICA_CONFLICT。知識內容比較只在明確知識操作或 vault compare --knowledge 觸發。完整 WRITE_DENIED 探測尚未實作；checkpoint repair 與獨立 project fork 已可預覽／套用。記憶完整性由 recover 驗證，resolve 成功只表示 Binding 成功。
+grant 預設只開放 project_link，pin Manifest／Vault 身份檔 hash；明確 --knowledge read/write 可開放 layout.knowledge 子樹。多候選需明確位置；初步選擇後，Resolver 有界比對已註冊副本的身份及本專案索引，分歧回報 REPLICA_CONFLICT。知識內容比較只在明確知識操作或 vault compare --knowledge 觸發。唯讀 resolve 核對 Binding；實際寫入失敗時由儲存層回報權限或佔用診斷。記憶完整性由 recover 驗證。
 
 ## Registry 位置與維護
 
@@ -61,6 +61,7 @@ resolve(repository_path, registry_path?, mode="read")
 | REPLICA_UNVERIFIED | 已知候選錯身份、不可讀、損壞或超限，拒絕把不完整比較確認為權威 |
 | READ_DENIED | 不當作空檔或不存在 |
 | WRITE_DENIED | 可讀時提供唯讀恢復 |
+| FILE_IN_USE | 檢查占用的應用程式；仍可驗證能讀取的來源 |
 | PROJECT_LINK_MISSING / MISMATCH | 不借用其他專案記憶 |
 | SCHEMA_UNSUPPORTED | 不自動升級／寫回 |
 | MEMORY_CORRUPT / CHECKPOINT_MISMATCH | 只使用可驗證資料，明示缺口 |

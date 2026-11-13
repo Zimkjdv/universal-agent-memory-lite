@@ -5,7 +5,7 @@ from pathlib import Path
 
 from . import __version__, registry
 from .binding import resolve, trust
-from .errors import UamlError
+from .errors import UamlError, file_access_error
 from .git_state import Git
 from .paths import registry_location, require_local_registry
 from .project_memory import checkpoint, init_project, init_vault
@@ -307,10 +307,10 @@ def main(argv=None):
         value = dispatch(args)
     except UamlError as exc:
         value = {"status": exc.code, "diagnostics": [exc.diagnostic()]}
-    except PermissionError:
-        value = {"status": "ACCESS_DENIED", "diagnostics": [{"code": "ACCESS_DENIED", "message": "Filesystem permission denied; no permissions were changed."}]}
-    except OSError:
-        value = {"status": "IO_FAILED", "diagnostics": [{"code": "IO_FAILED", "message": "Filesystem operation failed; inspect any prepared journal before retrying."}]}
+    except OSError as exc:
+        error = file_access_error(exc, "ACCESS_DENIED") or UamlError(
+            "IO_FAILED", "Filesystem operation failed; inspect any prepared journal before retrying.")
+        value = {"status": error.code, "diagnostics": [error.diagnostic()]}
     except UnicodeError:
         value = {"status": "MEMORY_CORRUPT", "diagnostics": [{"code": "MEMORY_CORRUPT", "message": "Expected UTF-8 text."}]}
     output = json.dumps(value, ensure_ascii=False, indent=2) if args.json else render(value)

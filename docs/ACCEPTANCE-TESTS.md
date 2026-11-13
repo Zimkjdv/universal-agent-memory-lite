@@ -100,6 +100,8 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 ## 補充邊界案例
 
+- 2026-11-14 於 Windows 10 build 19045 實測檔案佔用與唯讀屬性。排他控制代碼使恢復保留可讀的 State，回報 `FILE_IN_USE`。阻止替換的讀取控制代碼使 checkpoint 保留舊 Handoff 與待完成標記；關閉後使用原計畫成功修復。唯讀 Handoff 回報 `WRITE_DENIED`。相關 48 項測試通過。[Microsoft Win32 錯誤碼](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-)
+
 ### T01 真實 Codex CLI 新對話（2026-11-14）
 
 Windows 10 build 19045、Codex CLI 0.163.0、UAML 0.1.0.dev0、Python 3.12.10、Git 2.42.0.windows.2。使用臨時 Repo、Vault 與私有 Registry，安裝經 hash 確認的 Codex 手動入口及 `AGENTS.md` 引用。使用兩次獨立的 `codex exec --ephemeral`，第二次只提示恢復與回報欄位，未提供任務內容、前一段回覆或雜湊。兩次皆回報既有 `AGENTS.md` 中的驗證值 `fixture-rule-70207b9f`。

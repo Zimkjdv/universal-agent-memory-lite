@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -7,7 +8,7 @@ from uuid import UUID
 
 import yaml
 
-from .errors import UamlError
+from .errors import UamlError, file_access_error, windows_sharing_error
 from .paths import relative_path
 
 MAX_DOCUMENT = 256 * 1024
@@ -27,10 +28,12 @@ def read_at_most(path: Path, size: int, missing="MEMORY_MISSING") -> bytes:
             return stream.read(size)
     except FileNotFoundError as exc:
         raise UamlError(missing, "Required file is missing.") from exc
-    except PermissionError as exc:
-        raise UamlError("READ_DENIED", "Permission denied while reading a required file.") from exc
     except OSError as exc:
-        raise UamlError("READ_FAILED", "Cannot read a required file.") from exc
+        if os.name == "nt" and isinstance(exc, PermissionError) and getattr(exc, "winerror", None) in (None, 5):
+            sharing_error = windows_sharing_error(path, "READ_DENIED")
+            if sharing_error is not None:
+                raise sharing_error from exc
+        raise (file_access_error(exc, "READ_DENIED") or UamlError("READ_FAILED", "Cannot read a required file.")) from exc
 
 
 def read_bytes(path: Path, missing="MEMORY_MISSING") -> bytes:

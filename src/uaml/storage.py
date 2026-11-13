@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from .errors import UamlError
+from .errors import UamlError, file_access_error, windows_sharing_error
 from .formats import digest, json_bytes, now, read_bytes
 from .private_storage import ensure_private_directory, verify_private_permissions
 
@@ -33,6 +33,16 @@ def write(path: Path, data: bytes, expected: str | None, backups: Path | None = 
 
     Private payloads use a permission-checked staging file. Backups always do.
     """
+    try:
+        _write(path, data, expected, backups, private)
+    except OSError as exc:
+        diagnostic = file_access_error(exc, "WRITE_DENIED")
+        if diagnostic is not None:
+            raise diagnostic from exc
+        raise
+
+
+def _write(path, data, expected, backups, private):
     path.parent.mkdir(parents=True, exist_ok=True)
     old = None
     try:
@@ -63,7 +73,14 @@ def write(path: Path, data: bytes, expected: str | None, backups: Path | None = 
         else:
             if digest(read_bytes(path)) != expected:
                 raise UamlError("WRITE_CONFLICT", "Target changed during preparation.")
-            os.replace(temporary, path)
+            try:
+                os.replace(temporary, path)
+            except PermissionError as exc:
+                if getattr(exc, "winerror", None) == 5:
+                    sharing_error = windows_sharing_error(path, "WRITE_DENIED")
+                    if sharing_error is not None:
+                        raise sharing_error from exc
+                raise
         if digest(read_bytes(path)) != digest(data):
             raise UamlError("WRITE_CONFLICT", "Target changed after publication; inspect backups.")
     finally:
