@@ -21,16 +21,20 @@ def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def read_bytes(path: Path, missing="MEMORY_MISSING") -> bytes:
+def read_at_most(path: Path, size: int, missing="MEMORY_MISSING") -> bytes:
     try:
         with path.open("rb") as stream:
-            result = stream.read(MAX_DOCUMENT + 1)
+            return stream.read(size)
     except FileNotFoundError as exc:
         raise UamlError(missing, "Required file is missing.") from exc
     except PermissionError as exc:
         raise UamlError("READ_DENIED", "Permission denied while reading a required file.") from exc
     except OSError as exc:
         raise UamlError("READ_FAILED", "Cannot read a required file.") from exc
+
+
+def read_bytes(path: Path, missing="MEMORY_MISSING") -> bytes:
+    result = read_at_most(path, MAX_DOCUMENT + 1, missing)
     if len(result) > MAX_DOCUMENT:
         raise UamlError("DOCUMENT_TOO_LARGE", "Document exceeds the 256 KiB prototype limit.")
     return result

@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from uaml.binding import load_project, trust
 from uaml.errors import UamlError
-from uaml.formats import markdown, now
+from uaml.formats import markdown, now, read_at_most
 from uaml.git_state import Git
 from uaml.knowledge import add, get, scan, search, validate
 from uaml.project_memory import init_project
@@ -120,6 +120,27 @@ class KnowledgeTests(KnowledgeWorkspace):
         self.assertEqual(result["status"], "DEGRADED")
         self.assertEqual(result["scanned"], 2)
         self.assertIn("SCAN_LIMIT", {d["code"] for d in result["diagnostics"]})
+
+    def test_byte_budget_counts_invalid_notes_and_stops_at_one_lookahead_byte(self):
+        root = self.vault / "UAML/Knowledge"
+        root.mkdir(parents=True)
+        (root / "000-invalid.md").write_bytes(b"bad content")
+        header, body = self.note()
+        (root / f"{header['id']}.md").write_bytes(markdown(header, body))
+        total = 0
+
+        def measured(path, size):
+            nonlocal total
+            data = read_at_most(path, size)
+            total += len(data)
+            return data
+
+        with patch("uaml.knowledge.MAX_SCAN_BYTES", 24), patch("uaml.knowledge.read_at_most", side_effect=measured):
+            records, diagnostics, complete = scan(root)
+        self.assertFalse(complete)
+        self.assertEqual(records, [])
+        self.assertEqual([issue["code"] for issue in diagnostics], ["MEMORY_CORRUPT", "SCAN_LIMIT"])
+        self.assertEqual(total, 25)
 
     def test_search_is_readonly_and_does_not_scan_other_vault_areas(self):
         header, body = self.note()

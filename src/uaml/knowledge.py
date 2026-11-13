@@ -7,7 +7,7 @@ from pathlib import Path
 from . import registry
 from .binding import load_project, resolve
 from .errors import UamlError
-from .formats import (base, digest, fields, frontmatter, identifier, json_bytes, read_bytes,
+from .formats import (MAX_DOCUMENT, base, digest, fields, frontmatter, identifier, json_bytes, read_at_most, read_bytes,
                       parse_json, safe_metadata, string, timestamp)
 from .paths import inside
 from .storage import lock, write
@@ -144,7 +144,10 @@ def authorize(git, registry_path: Path, write_access=False, *, allow_pending=Fal
 
 
 def record(path: Path):
-    raw = read_bytes(path)
+    return parse_record(path, read_bytes(path))
+
+
+def parse_record(path: Path, raw: bytes):
     header, body = validate(raw)
     if path.name != f"{header['id']}.md":
         raise UamlError("SCHEMA_INVALID", "Knowledge filename must match its stable ID.")
@@ -170,11 +173,17 @@ def scan(root: Path):
                 raise UamlError("UNSAFE_PATH", "Nested directories or linked notes require manual review.")
             if not entry.name.lower().endswith(".md"):
                 continue
-            note = record(path)
-            total_bytes += len(note["raw"])
+            remaining = MAX_SCAN_BYTES - total_bytes
+            if not remaining:
+                raise UamlError("SCAN_LIMIT", "Knowledge byte budget exceeded; results are incomplete.")
+            # One lookahead byte distinguishes an exact fit from overflow.
+            raw = read_at_most(path, min(MAX_DOCUMENT, remaining) + 1)
+            total_bytes += len(raw)
             if total_bytes > MAX_SCAN_BYTES:
                 raise UamlError("SCAN_LIMIT", "Knowledge byte budget exceeded; results are incomplete.")
-            records.append(note)
+            if len(raw) > MAX_DOCUMENT:
+                raise UamlError("DOCUMENT_TOO_LARGE", "Document exceeds the 256 KiB prototype limit.")
+            records.append(parse_record(path, raw))
         except UamlError as exc:
             diagnostics.append({**exc.diagnostic(), "path": entry.name})
             if exc.code == "SCAN_LIMIT":

@@ -104,6 +104,18 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 - 2026-11-14 私有交易資料案例涵蓋 Everyone 可讀父目錄下的新子目錄與各個 artifact、既有不安全備份目錄、暫存檔權限故障與 Unix 舊版 0755 子目錄相容性。Windows 10 本機 247 項通過、2 項 POSIX 專屬案例跳過。
 
+### T15 合成資料量測（2026-11-14）
+
+在 Windows 10 build 19045、Core i7-10700F、約 64 GiB RAM、Python 3.12.10、Git 2.42.0.windows.2 執行 `python -m tests.test_efficiency -v`。每篇 84 KiB，另有長篇 Handoff 與一份位於 UAML 知識區外的合成筆記。
+
+| CLI 操作 | 知識檔案讀取次數 | UAML 讀取知識 bytes | UAML 讀取總 bytes | UTF-8 輸出 bytes | 單次耗時 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `recover --compact`，Vault 有 190 篇 | 0 | 0 | 184,573 | 9,193 | 312 ms |
+| `knowledge search`，190 篇匹配 | 190 | 16,343,040 | 16,347,486 | 17,981 | 1,181 ms |
+| `knowledge search`，200 篇且超出 byte 預算 | 196 | 16,777,217 | 16,781,663 | 18,148 | 1,184 ms |
+
+恢復在 32 KiB 內保留長篇末尾的下一步。搜尋回傳五篇有截斷標記的候選摘錄。超出 16 MiB 時搜尋僅多讀一個判定用 byte，回報 `DEGRADED` 與 `SCAN_LIMIT`。測試逐檔核對前後 hash，並確認未讀取知識區外筆記。表中的讀取量來自 UAML Python 讀取介面，未包含檔案系統快取、Git 子程序或實體磁碟流量。耗時為同一台電腦直接呼叫 CLI 入口的單次量測。T15 的真實 Agent 普通對話、token 與實際載入量仍待測量。
+
 - 2026-11-07 新增 20 項原生入口案例：唯讀預覽／零 Vault 讀取、原文／BOM／CRLF／備份權限、CLAUDE 匯入不複製規範、Agent 條件、冪等、原檔／依賴／備份位置變動、手動入口必要性、override、標記／fence／comment、假秘密、hard link、大小預算、未核准、備份 ACL、中斷續做、備份時人工改動、CLI，以及實際 Windows DACL／Unix mode／file identity 保留及短寫入故障注入。這些是程式層安全與契約測試，不是 T01／T02 實機接管通過證據。
 
 - 2026-11-07 新增 13 項私有 home 測試：新 Registry 初始化、既有目錄／重複 init 拒絕、不變父目錄、缺失祖先、權限失敗、未確認權限、目錄／檔案建立競態、Repo 邊界、CLI、原生 Windows Everyone 父授權不繼承、Unix 0700，以及離線 checkpoint。平台專屬案例在其他 OS 明示 skip；不替代 Windows 11 實機證據。
