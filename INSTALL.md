@@ -185,7 +185,7 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 
 ## 中斷 checkpoint 的安全復原
 
-從 Registry 同層 `transactions/<snapshot-id>.json` 找出 prepared 交易。新交易會先保存完整 before/after payload，再開始替換 Repo 記憶。repair 只能補完這個已保存快照，不生成新內容：
+若恢復回報 `CHECKPOINT_TRANSACTION_PENDING`，使用診斷中的 snapshot ID 與建立交易時的 Registry。舊版交易可從 Registry 同層 `transactions/<snapshot-id>.json` 找出 prepared journal。工具保存完整 before/after payload 後，將待完成 ID 存在此 checkout 的 Git 目錄，直到 Repo 記憶與 journal 都已完成。此期間另一筆 checkpoint 或 Fork 會被拒絕。`repair` 只能補完這個已保存快照：
 
 ```powershell
 & $pythonPath --repo $repoPath --registry $registryPath --json repair --transaction '<snapshot-id>'
@@ -195,7 +195,7 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 
 預覽完全唯讀；apply 在合作鎖內重新檢查身份、payload 及每個目標 hash，最後公布 checkpoint。任一目標已被另外修改、Binding 改變或 payload 損壞，全部檢查通過前不寫入。apply 中再中斷可重新預覽後續步驟。只保留及補完資料，不刪除或回滾人工成果。
 
-舊 schema_version 1 journal 沒有可驗證 payload，回報 REPAIR_UNSUPPORTED，需人工核對備份；不假造 after-image。真實程序被終止後可能遺留 lock，工具不按時間自動移除，需使用者先確認持有者。Vault 反向索引初始化若在 journal 建立之前中斷，不在此 repair 的涵蓋範圍。
+journal 已完成但仍有標記時，使用相同的 repair 流程核對三檔並清除標記。舊 schema_version 1 journal 會回報 REPAIR_UNSUPPORTED，需人工核對備份。真實程序被終止後可能遺留 lock，請先確認持有者。Vault 反向索引初始化若在 journal 建立前中斷，需人工核對初始化結果。
 
 ## 唯讀完整性檢查
 

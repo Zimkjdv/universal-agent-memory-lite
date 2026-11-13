@@ -66,6 +66,44 @@ def exclusions(manifest):
     return [".uaml", *(manifest["memory"][key] for key in ("project_state", "handoff", "checkpoint"))]
 
 
+def checkpoint_marker(git):
+    return inside(git.directory(), "uaml-checkpoint-pending.json")
+
+
+def pending_checkpoint(marker):
+    try:
+        info = marker.lstat()
+    except FileNotFoundError:
+        return None
+    if not marker.is_file() or marker.is_symlink() or getattr(info, "st_file_attributes", 0) & 0x400:
+        raise UamlError("CHECKPOINT_MARKER_INVALID", "The local checkpoint marker must be a regular file.")
+    value = parse_json(read_bytes(marker))
+    fields(value, ("schema_version", "snapshot_id"))
+    if type(value["schema_version"]) is not int or value["schema_version"] != 1:
+        raise UamlError("SCHEMA_UNSUPPORTED", "Unsupported local checkpoint marker schema.")
+    identifier(value["snapshot_id"])
+    return value["snapshot_id"]
+
+
+def pending_checkpoint_error(snapshot_id):
+    return UamlError("CHECKPOINT_TRANSACTION_PENDING",
+                     f"Checkpoint {snapshot_id} is pending. Preview repair --transaction {snapshot_id} with the original registry.")
+
+
+def clear_checkpoint_marker(marker, snapshot_id):
+    if pending_checkpoint(marker) != snapshot_id:
+        raise UamlError("WRITE_CONFLICT", "The checkpoint marker changed during publication; inspect it before retrying.")
+    marker.unlink()
+
+
+def require_no_pending_checkpoint(git):
+    marker = checkpoint_marker(git)
+    pending = pending_checkpoint(marker)
+    if pending is not None:
+        raise pending_checkpoint_error(pending)
+    return marker
+
+
 def init_vault(path: Path, name: str):
     public_name(name)
     if not path.is_dir():
@@ -104,10 +142,11 @@ def init_project(git: Git, registry_path: Path, vault_id: str, name: str):
     if any(target.exists() for target in targets):
         raise UamlError("WRITE_CONFLICT", "Initialization would overwrite existing files.")
     with lock(inside(git.root, ".uaml/write.lock")), lock(inside(path, ".uaml/write.lock")):
+        marker = require_no_pending_checkpoint(git)
         # No cross-filesystem rollback: a partial initialization stays visible for diagnosis.
         write(targets[0], yaml_bytes(manifest), None)
         write(targets[1], markdown(link, "# Project link\n\nCurrent state and handoff are authoritative in the repository.\n"), None)
-        _save(git, registry_path, manifest, "uaml", initial=True)
+        _save(git, registry_path, manifest, "uaml", marker, initial=True)
     return {"status": "PROJECT_INITIALIZED", "project": manifest["project"], "binding": manifest["binding"],
             "next_step": "Review .uaml/project.yaml, then run project trust to approve this checkout."}
 
@@ -119,10 +158,11 @@ def checkpoint(git: Git, registry_path: Path, agent: str):
     require_private_registry(registry_path)
     manifest, _ = load_project(git)
     with lock(inside(git.root, ".uaml/write.lock")):
-        return _save(git, registry_path, manifest, agent, initial=False)
+        marker = require_no_pending_checkpoint(git)
+        return _save(git, registry_path, manifest, agent, marker, initial=False)
 
 
-def _save(git, registry_path, manifest, agent, initial):
+def _save(git, registry_path, manifest, agent, marker, initial):
     snapshot_id, updated = str(uuid4()), now()
     observation = git.observe(exclusions(manifest))
     prepared, previous, originals, prior_snapshots = {}, {}, {}, []
@@ -175,8 +215,10 @@ def _save(git, registry_path, manifest, agent, initial):
                      "binding_fingerprint": digest(json_bytes(manifest)), "entries": entries,
                      "status": "prepared", "checkpoint": checkpoint_value,
                      "previous_hashes": previous, "previous_checkpoint_hash": digest(old_checkpoint) if old_checkpoint else None}
-    write(journal, json_bytes(journal_value), None)
-    # A crash leaves the prepared journal and old backups. No blind rollback.
+    prepared_journal = json_bytes(journal_value)
+    write(journal, prepared_journal, None)
+    # Publish the checkout-local marker before changing any checkpoint file.
+    write(marker, json_bytes({"schema_version": 1, "snapshot_id": snapshot_id}), None)
     for relative, data in prepared.items():
         if relative == manifest["memory"]["checkpoint"]:
             continue
@@ -184,7 +226,8 @@ def _save(git, registry_path, manifest, agent, initial):
     write(checkpoint_path, json_bytes(checkpoint_value), digest(old_checkpoint) if old_checkpoint else None,
           registry_path.parent / "backups")
     journal_value["status"] = "complete"
-    write(journal, json_bytes(journal_value), digest(read_bytes(journal)))
+    write(journal, json_bytes(journal_value), digest(prepared_journal))
+    clear_checkpoint_marker(marker, snapshot_id)
     return {"status": "CHECKPOINT_SAVED", "snapshot_id": snapshot_id,
             "files": checkpoint_value["files"], "git": observation}
 

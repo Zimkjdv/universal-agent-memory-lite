@@ -44,11 +44,13 @@ class Git:
             raise UamlError("GIT_FAILED", "Git command failed; verify this is an accessible worktree.")
         return process.stdout
 
+    def directory(self):
+        return Path(self.run("rev-parse", "--absolute-git-dir").decode("utf-8").rstrip("\r\n")).resolve()
+
     def identity(self):
-        directory = self.run("rev-parse", "--absolute-git-dir").decode("utf-8").strip()
         # Do not expose URLs that may contain credentials. Hash remote configuration.
         remotes = self.run("config", "--local", "--get-regexp", r"^remote\..*\.url$", optional=True) or b""
-        return {"repository_root": str(self.root), "git_directory": str(Path(directory).resolve()),
+        return {"repository_root": str(self.root), "git_directory": str(self.directory()),
                 "remote_fingerprint": digest(remotes)}
 
     def memory_history(self, saved, current, allowed_paths):

@@ -71,11 +71,12 @@ class RecoveryTests(Workspace):
         self.assertEqual(old, file.read_bytes())
         result = recover(self.git, self.registry)
         self.assertIn("CHECKPOINT_MISMATCH", {d["code"] for d in result["diagnostics"]})
+        self.assertIn("CHECKPOINT_TRANSACTION_PENDING", {d["code"] for d in result["diagnostics"]})
         self.assertTrue(any((self.registry.parent / "backups").glob("*.bak")))
         self.assertTrue(any('"prepared"' in p.read_text(encoding="utf-8") for p in (self.registry.parent / "transactions").glob("*.json")))
         with self.assertRaises(UamlError) as error:
             checkpoint(self.git, self.registry, "codex")
-        self.assertEqual(error.exception.code, "CHECKPOINT_MISMATCH")
+        self.assertEqual(error.exception.code, "CHECKPOINT_TRANSACTION_PENDING")
 
     def test_secret_detection_happens_before_any_checkpoint_write(self):
         self.bind()

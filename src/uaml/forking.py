@@ -9,7 +9,7 @@ from .errors import UamlError
 from .formats import (digest, fields, frontmatter, identifier, json_bytes, markdown, memory, now,
                       parse_json, parse_yaml, project, project_link, public_name, read_bytes, safe_metadata, text, yaml_bytes)
 from .paths import inside, local_key, require_local_registry, require_private_registry
-from .project_memory import HANDOFF_BODY, STATE_BODY, exclusions, validate_checkpoint
+from .project_memory import HANDOFF_BODY, STATE_BODY, exclusions, require_no_pending_checkpoint, validate_checkpoint
 from .storage import lock, write
 
 
@@ -147,6 +147,7 @@ def apply(git, registry_path: Path, fork_id: str, expected_plan: str):
         raise UamlError("WRITE_CONFLICT", "Fork plan does not match the reviewed hash.")
     vault_path = preview[4]
     with lock(inside(git.root, ".uaml/write.lock")), lock(inside(vault_path, ".uaml/write.lock")):
+        require_no_pending_checkpoint(git)
         result, value, prepared, current, current_vault, target_link, link_bytes = inspect(git, registry_path, fork_id)
         if result["plan_hash"] != expected_plan or current_vault != vault_path:
             raise UamlError("WRITE_CONFLICT", "Fork plan changed before locking.")

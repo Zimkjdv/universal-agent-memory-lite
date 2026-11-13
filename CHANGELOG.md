@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-14：checkpoint 中斷防護
+
+- 私有 journal 準備完成後，先在該 checkout 的 Git 目錄公布待完成 snapshot ID，再更新記憶檔。recover／validate／migration 回報待完成交易，換用 Registry 也不能啟動另一筆 checkpoint 或 Fork。
+- repair 依原 journal 核對 after-image 及目標 hash。若只剩標記清理，原檔與已完成 journal 保留；既有 v2 journal 仍可修復。
+
 ### Fixed — 2026-11-07：原生引用的權限保留
 
 - 既有原生指令檔改為核對 file identity／原文後只追加，保留原 ACL／mode，避免整檔替換繼承較寬的父目錄權限；新檔仍為 create-only 原子公布。

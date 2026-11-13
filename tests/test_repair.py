@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from uaml.errors import UamlError
 from uaml.formats import frontmatter, markdown
-from uaml.project_memory import checkpoint
+from uaml.project_memory import checkpoint, checkpoint_marker
 from uaml.recovery import recover
 from uaml.repair import repair
 from uaml.storage import write
@@ -51,6 +51,80 @@ class RepairTests(Workspace):
         self.assertEqual(plan["actions"][-1]["action"], "finish")
         repair(self.git, self.registry, transaction, True, plan["plan_hash"])
         self.assertEqual(recover(self.git, self.registry)["status"], "RECOVERED")
+
+    def test_interruption_before_first_write_blocks_new_checkpoint_in_any_registry(self):
+        transaction = self.interrupted("PROJECT-STATE.md")
+        command = [sys.executable, "-m", "uaml", "--repo", str(self.repo), "--registry", str(self.registry), "--json"]
+        compact = subprocess.run(command + ["recover", "--compact"], capture_output=True)
+        self.assertEqual(compact.returncode, 1)
+        self.assertIn(transaction, next(item["message"] for item in json.loads(compact.stdout)["diagnostics"]
+                                        if item["code"] == "CHECKPOINT_TRANSACTION_PENDING"))
+        original = {p: p.read_bytes() for p in (self.repo / "docs/memory").iterdir()}
+        other_registry = self.base / "other" / "registry.json"
+        for path in (self.registry, other_registry):
+            with self.assertRaises(UamlError) as error:
+                checkpoint(self.git, path, "retry")
+            self.assertEqual(error.exception.code, "CHECKPOINT_TRANSACTION_PENDING")
+        self.assertFalse(other_registry.parent.exists())
+        self.assertEqual(original, {p: p.read_bytes() for p in original})
+
+    def test_complete_journal_with_marker_can_be_finalized_without_rewriting_files(self):
+        self.bind()
+        with patch("uaml.project_memory.clear_checkpoint_marker", side_effect=OSError("interrupted")):
+            with self.assertRaises(OSError):
+                checkpoint(self.git, self.registry, "test-agent")
+        marker = checkpoint_marker(self.git)
+        transaction = json.loads(marker.read_bytes())["snapshot_id"]
+        report = recover(self.git, self.registry)
+        self.assertEqual(report["status"], "DEGRADED")
+        self.assertTrue(all(source["checkpoint_verified"] for source in report["sources"]))
+        plan = repair(self.git, self.registry, transaction)
+        self.assertEqual(plan["status"], "REPAIR_PREVIEW")
+        self.assertTrue(all(action["action"] == "keep" for action in plan["actions"]))
+        with patch("uaml.repair.write") as write_file:
+            self.assertEqual(repair(self.git, self.registry, transaction, True, plan["plan_hash"])["status"], "REPAIRED")
+        write_file.assert_not_called()
+        self.assertFalse(marker.exists())
+        self.assertEqual(recover(self.git, self.registry)["status"], "RECOVERED")
+
+    def test_repair_of_another_journal_cannot_replace_pending_checkpoint(self):
+        transaction = self.interrupted()
+        journals = (self.registry.parent / "transactions").glob("*.json")
+        older = next(path.stem for path in journals if path.stem != transaction)
+        with self.assertRaises(UamlError) as error:
+            repair(self.git, self.registry, older, True, "old-plan")
+        self.assertEqual(error.exception.code, "CHECKPOINT_TRANSACTION_PENDING")
+        self.assertEqual(json.loads(checkpoint_marker(self.git).read_bytes())["snapshot_id"], transaction)
+
+    def test_legacy_prepared_journal_remains_repairable_without_marker(self):
+        transaction = self.interrupted()
+        marker = checkpoint_marker(self.git)
+        plan = repair(self.git, self.registry, transaction)
+        marker.unlink()
+        with self.assertRaises(UamlError) as error:
+            repair(self.git, self.registry, transaction, True, plan["plan_hash"])
+        self.assertEqual(error.exception.code, "WRITE_CONFLICT")
+        legacy_plan = repair(self.git, self.registry, transaction)
+        self.assertEqual(repair(self.git, self.registry, transaction, True, legacy_plan["plan_hash"])["status"], "REPAIRED")
+        self.assertFalse(marker.exists())
+
+    def test_corrupt_pending_marker_is_preserved(self):
+        self.interrupted()
+        marker = checkpoint_marker(self.git)
+        marker.write_bytes(b"not a journal")
+        with self.assertRaises(UamlError) as error:
+            checkpoint(self.git, self.registry, "retry")
+        self.assertEqual(error.exception.code, "MEMORY_CORRUPT")
+        self.assertEqual(marker.read_bytes(), b"not a journal")
+
+    def test_pending_marker_is_per_worktree_and_not_tracked(self):
+        transaction = self.interrupted()
+        worktree = self.base / "linked checkout"
+        self.git_cmd("worktree", "add", "--detach", str(worktree))
+        other_git = type(self.git)(worktree)
+        self.assertFalse(checkpoint_marker(other_git).exists())
+        self.assertEqual(json.loads(checkpoint_marker(self.git).read_bytes())["snapshot_id"], transaction)
+        self.assertNotIn(b"uaml-checkpoint-pending", self.git_cmd("status", "--porcelain", "--untracked-files=all"))
 
     def test_manual_edit_after_interruption_is_never_overwritten(self):
         transaction = self.interrupted()

@@ -5,7 +5,8 @@ from .errors import UamlError
 from .formats import digest, frontmatter, memory, parse_json, read_bytes, safe_metadata
 from .git_state import Git, memory_history_paths
 from .paths import inside
-from .project_memory import exclusions, validate_checkpoint
+from .project_memory import (checkpoint_marker, exclusions, pending_checkpoint, pending_checkpoint_error,
+                             validate_checkpoint)
 
 
 def recover(git: Git, registry_path: Path, body_limit=12 * 1024):
@@ -66,5 +67,14 @@ def recover(git: Git, registry_path: Path, body_limit=12 * 1024):
                                       "untrusted_markdown": excerpt, "truncated": body_limit is not None and len(body_bytes) > body_limit})
         except UamlError as exc:
             report["diagnostics"].append(exc.diagnostic())
+    try:
+        pending = pending_checkpoint(checkpoint_marker(git))
+        if pending is not None:
+            report["diagnostics"].append(pending_checkpoint_error(pending).diagnostic())
+    except UamlError as exc:
+        report["diagnostics"].append(exc.diagnostic())
+    except OSError:
+        report["diagnostics"].append({"code": "CHECKPOINT_MARKER_UNREADABLE",
+                                      "message": "Cannot inspect the local checkpoint marker."})
     report["status"] = "RECOVERED" if not report["diagnostics"] and report["binding"]["status"] == "RESOLVED" else "DEGRADED"
     return report

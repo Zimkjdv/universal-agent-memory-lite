@@ -6,7 +6,8 @@ from .errors import UamlError
 from .formats import (digest, fields, frontmatter, identifier, json_bytes, memory,
                       parse_json, read_bytes, safe_metadata)
 from .paths import inside, local_key, require_local_registry, require_private_registry
-from .project_memory import validate_checkpoint
+from .project_memory import (checkpoint_marker, clear_checkpoint_marker, pending_checkpoint,
+                             pending_checkpoint_error, validate_checkpoint)
 from .storage import lock, write
 
 
@@ -24,6 +25,10 @@ def inspect(git, registry_path: Path, transaction_id: str):
     require_local_registry(registry_path, git.root)
     require_private_registry(registry_path)
     manifest, _ = load_project(git)
+    marker = checkpoint_marker(git)
+    pending = pending_checkpoint(marker)
+    if pending is not None and pending != transaction_id:
+        raise pending_checkpoint_error(pending)
     journal_path = inside(registry_path.parent, f"transactions/{transaction_id}.json")
     raw = read_bytes(journal_path, "TRANSACTION_MISSING")
     value = parse_json(raw)
@@ -76,11 +81,12 @@ def inspect(git, registry_path: Path, transaction_id: str):
         current[entry["path"]] = current_hash
         prepared[entry["path"]] = after
         actions.append({"path": entry["path"], "action": "keep" if current_hash == entry["after_hash"] else "finish"})
-    plan_hash = digest(json_bytes({"journal_hash": digest(raw), "current_hashes": current}))
-    plan = {"status": "REPAIR_NOT_NEEDED" if value["status"] == "complete" else "REPAIR_PREVIEW",
+    plan_hash = digest(json_bytes({"journal_hash": digest(raw), "current_hashes": current, "pending": pending}))
+    repair_needed = value["status"] == "prepared" or pending is not None
+    plan = {"status": "REPAIR_PREVIEW" if repair_needed else "REPAIR_NOT_NEEDED",
             "transaction_id": transaction_id, "plan_hash": plan_hash, "actions": actions,
             "limitations": ["Only finish the saved snapshot; no commands or unsaved information are reconstructed."]}
-    return plan, value, raw, journal_path, prepared, current
+    return plan, value, raw, journal_path, prepared, current, marker, pending
 
 
 def repair(git, registry_path: Path, transaction_id: str, apply=False, expected_plan=None):
@@ -89,15 +95,19 @@ def repair(git, registry_path: Path, transaction_id: str, apply=False, expected_
     if not expected_plan:
         raise UamlError("PLAN_REQUIRED", "Preview repair first, then pass --expect-plan with its plan_hash.")
     with lock(inside(git.root, ".uaml/write.lock")):
-        plan, value, raw, journal_path, prepared, current = inspect(git, registry_path, transaction_id)
+        plan, value, raw, journal_path, prepared, current, marker, pending = inspect(git, registry_path, transaction_id)
         if plan["plan_hash"] != expected_plan:
             raise UamlError("WRITE_CONFLICT", "Repair plan changed; preview again before applying.")
         if plan["status"] == "REPAIR_NOT_NEEDED":
             return plan
+        if pending is None:  # A legacy journal never published a marker.
+            write(marker, json_bytes({"schema_version": 1, "snapshot_id": transaction_id}), None)
         # Order is validated: the checkpoint is always published last.
         for relative, data in prepared.items():
             if current[relative] != digest(data):
                 write(inside(git.root, relative), data, current[relative], registry_path.parent / "backups")
-        value["status"] = "complete"
-        write(journal_path, json_bytes(value), digest(raw))
+        if value["status"] != "complete":
+            value["status"] = "complete"
+            write(journal_path, json_bytes(value), digest(raw))
+        clear_checkpoint_marker(marker, transaction_id)
         return {**plan, "status": "REPAIRED"}
