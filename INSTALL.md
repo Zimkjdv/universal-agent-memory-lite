@@ -196,7 +196,7 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 
 預覽完全唯讀；apply 在合作鎖內重新檢查身份、payload 及每個目標 hash，最後公布 checkpoint。任一目標已被另外修改、Binding 改變或 payload 損壞，全部檢查通過前不寫入。apply 中再中斷可重新預覽後續步驟。只保留及補完資料，不刪除或回滾人工成果。
 
-journal 已完成但仍有標記時，使用相同的 repair 流程核對三檔並清除標記。舊 schema_version 1 journal 會回報 REPAIR_UNSUPPORTED，需人工核對備份。真實程序被終止後可能遺留 lock，請先確認持有者。Vault 反向索引初始化若在 journal 建立前中斷，需人工核對初始化結果。
+journal 已完成但仍有標記時，使用相同的 repair 流程核對三檔並清除標記。舊 schema_version 1 journal 會回報 REPAIR_UNSUPPORTED，需人工核對備份。若 `--apply` 回報 `WRITE_CONFLICT` 且 `.uaml/write.lock` 仍在，先核對 lock 裡的 `pid`、`created_at` 與實際程序。確認原持有者已終止且目前沒有其他寫入者後，可將該 lock 移到私人位置保留，再重新預覽與套用。Vault 反向索引初始化若在 journal 建立前中斷，需人工核對初始化結果。
 
 ## 唯讀完整性檢查
 

@@ -94,7 +94,7 @@ Windows 11、真實 Agent 新對話／雙向交接與第二台使用者環境仍
 
 1. **M6／T01：真實 Codex 新對話恢復** — 已完成兩段獨立 Codex CLI 對話的合成專案驗收，保存及恢復使用只存取該 fixture 的本機工具。Windows CLI 原生 shell sandbox 仍有存取限制，桌面端與 Claude 仍待驗收。
 2. **M3／M7：Windows 檔案佔用與權限診斷** — 已完成。三項原生 Windows 案例涵蓋佔用的替換、唯讀目標與排他讀取，48 項相關測試全部通過。
-3. **M3／T11：程序終止後的 checkpoint 修復驗證** — 待驗證。
+3. **M3／T11：程序終止後的 checkpoint 修復驗證** — 已完成五個實際終止點的 CLI 復原測試。Windows 10 完整套件共 255 項案例，253 項通過，2 項 POSIX 專屬案例跳過。
 
 ## Phase 5 建議里程碑
 

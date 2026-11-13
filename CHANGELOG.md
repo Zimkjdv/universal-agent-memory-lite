@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Verified — 2026-11-14：checkpoint 程序終止後的修復
+
+- 實際終止 checkpoint 子程序，驗證五個公布階段的診斷、前後檔案 hash、鎖防護與原快照補完。安裝指南補上已終止程序的遺留鎖處理方式。
+
 ### Fixed — 2026-11-14：Windows 檔案佔用診斷
 
 - 恢復與安全寫入可辨識 Windows 分享／鎖定衝突 `FILE_IN_USE`，實際權限拒絕保留讀寫方向。檔案釋放後可使用既有 repair 完成待處理 checkpoint。

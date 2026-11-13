@@ -100,8 +100,6 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 ## 補充邊界案例
 
-- 2026-11-14 於 Windows 10 build 19045 實測檔案佔用與唯讀屬性。排他控制代碼使恢復保留可讀的 State，回報 `FILE_IN_USE`。阻止替換的讀取控制代碼使 checkpoint 保留舊 Handoff 與待完成標記；關閉後使用原計畫成功修復。唯讀 Handoff 回報 `WRITE_DENIED`。相關 48 項測試通過。[Microsoft Win32 錯誤碼](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-)
-
 ### T01 真實 Codex CLI 新對話（2026-11-14）
 
 Windows 10 build 19045、Codex CLI 0.163.0、UAML 0.1.0.dev0、Python 3.12.10、Git 2.42.0.windows.2。使用臨時 Repo、Vault 與私有 Registry，安裝經 hash 確認的 Codex 手動入口及 `AGENTS.md` 引用。使用兩次獨立的 `codex exec --ephemeral`，第二次只提示恢復與回報欄位，未提供任務內容、前一段回覆或雜湊。兩次皆回報既有 `AGENTS.md` 中的驗證值 `fixture-rule-70207b9f`。
@@ -114,6 +112,14 @@ Windows 10 build 19045、Codex CLI 0.163.0、UAML 0.1.0.dev0、Python 3.12.10、
 | `docs/memory/HANDOFF.md` | `1467fd605b42aa0e64bbb664ab8fa8228bb1ac505a2d55e904a71a16bd71b576` |
 
 直接 shell 試跑讀取 fixture 路徑時被 Windows sandbox 拒絕。對話驗收改用執行期間臨時啟用的本機 stdio MCP fixture，呼叫相同 UAML 保存／精簡恢復函式及 Git；第二段工具只提供讀取。T01 對話層在上述條件下通過；原生 shell 路徑此次受阻，桌面及 Windows 11 尚未執行。此 fixture 為此次驗收工具，日常 UAML CLI 安裝流程維持原有依賴。[OpenAI Docs 的非互動模式](https://learn.chatgpt.com/docs/non-interactive-mode)
+
+### T11 實際終止 checkpoint 程序（2026-11-14）
+
+在 Windows 10 build 19045 執行 `python -m unittest -v tests.test_checkpoint_process`。子程序透過 CLI 執行實際寫入，在公布待完成標記、State、Handoff、checkpoint 或完成 journal 後暫停，由父程序終止。五個階段都驗證 `recover --compact` 回報 `DEGRADED` 與同一 snapshot ID，並核對三個目標及備份的 SHA-256。若遺留的 lock 仍在，修復套用回報 `WRITE_CONFLICT`。測試確認持有者已終止並移出該 lock 後，以預覽的 hash 套用；每次都完成原 snapshot 並取得 `RECOVERED`。測試涵蓋程序終止，斷電與儲存裝置故障另需驗收。
+
+### 其他儲存邊界
+
+- 2026-11-14 於 Windows 10 build 19045 實測檔案佔用與唯讀屬性。排他控制代碼使恢復保留可讀的 State，回報 `FILE_IN_USE`。阻止替換的讀取控制代碼使 checkpoint 保留舊 Handoff 與待完成標記；關閉後使用原計畫成功修復。唯讀 Handoff 回報 `WRITE_DENIED`。相關 48 項測試通過。[Microsoft Win32 錯誤碼](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-)
 
 - 2026-11-14 checkpoint 中斷案例涵蓋第一檔前失敗、journal 完成後標記清理失敗、更換 Registry、其他 journal、舊 journal、標記損壞、linked worktree 隔離及 compact CLI 診斷。測試使用合成資料及故障注入。
 
