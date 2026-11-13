@@ -24,6 +24,8 @@ uaml --repo . adapter --agent all --apply --expect-plan '<plan-hash>'
 
 Codex 依共用流程執行 recover --compact、核對現有規範／Git／實際檔案，回報進度、Blockers、不確定性及下一步。DEGRADED 或截斷須核對診斷與原始來源；未保存內容無法恢復。
 
+2026-11-14 已驗證兩段獨立 Codex CLI 對話可透過隔離 fixture 工具保存並恢復同一快照。該台 Windows 10 的原生 shell sandbox 存取受阻。若 CLI 可以從自己的終端機執行，先在終端機跑 `uaml --repo . --json recover --compact`，再提供經審閱的結果供 Codex 核對。證據及驗收範圍見 [T01 實測](ACCEPTANCE-TESTS.md#t01-真實-codex-cli-新對話2026-11-14)。
+
 Codex 的原生入口由 [官方 AGENTS.md 文件](https://learn.chatgpt.com/docs/agent-configuration/agents-md) 說明。它有 override 優先級及合併後的大小預算；產生引用不代表桌面版已實測載入。可使用下方 --native 流程或自行加入條件式短引用。
 
 ## 新 Claude Code 對話

@@ -6,7 +6,7 @@
 
 測試命令見 [INSTALL](../INSTALL.md)。tests/test_binding.py 覆蓋 Binding／Fork／搬遷；test_formats.py 覆蓋安全解析及 Windows junction；test_recovery.py 覆蓋保存、過時／未提交內容、中斷與不可信文字；test_git_and_storage.py 覆蓋 CLI、worktree、鎖及備份。讀取拒絕為故障注入，不能冒充完整 Windows ACL 驗收。
 
-T01/T02/T03 的真實 Agent／第二環境尚未執行；Knowledge 新增／讀取／修訂／檢索、基本去重與 checkpoint 補完已有程式層證據，完整生命週期、ACL 與所有並行邊界仍未完成。
+T01 已有真實 Codex CLI 搭配隔離 fixture 工具的對話證據，Windows 原生 shell sandbox 與桌面端仍待確認。T02／T03 尚待真實雙向交接與第二環境驗收。Knowledge 新增／讀取／修訂／檢索、基本去重與 checkpoint 補完已有程式層證據。
 
 ### 2026-10-22 本輪驗證記錄
 
@@ -99,6 +99,19 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 | T16 Rename & Fork | 改名、Remote 變更、保留原 Manifest 的 Fork | 分別解析、確認搬遷或新身份 | 搬遷保留 ID；未核准 Fork 零私人內容讀取；獨立 Fork 新 ID |
 
 ## 補充邊界案例
+
+### T01 真實 Codex CLI 新對話（2026-11-14）
+
+Windows 10 build 19045、Codex CLI 0.163.0、UAML 0.1.0.dev0、Python 3.12.10、Git 2.42.0.windows.2。使用臨時 Repo、Vault 與私有 Registry，安裝經 hash 確認的 Codex 手動入口及 `AGENTS.md` 引用。使用兩次獨立的 `codex exec --ephemeral`，第二次只提示恢復與回報欄位，未提供任務內容、前一段回覆或雜湊。兩次皆回報既有 `AGENTS.md` 中的驗證值 `fixture-rule-70207b9f`。
+
+第一次 `01a1d5dd-1779-7153-8175-5c6cde119d3a` 讀取入口與共用流程，觸發 `checkpoint --agent codex`，回報 `CHECKPOINT_SAVED`，snapshot 為 `04daddce-4226-4e04-8bd5-c896967640a2`。第二次 `01a1d5dd-6329-71d1-96a5-c646345c9098` 讀取相同入口，觸發精簡恢復並核對當前 Git。回報 `RECOVERED`、`main`、HEAD `63aff1d18b5ed5ea00c5239665af359577ffdf7b` 與相同 snapshot。回覆辨識出未完成的 `finish synthetic parser 5b427393`、缺少合成 fixtures 的阻礙，以及新增 fixtures 的下一步。恢復前後核對 Repo／Vault／Registry 的所有檔案及 SHA-256 均相符。
+
+| 來源 | SHA-256 |
+| --- | --- |
+| `docs/memory/PROJECT-STATE.md` | `392ffe89bb7b565a1d97ffcb30f86d5ce75c5d6e17e09223e3b76d69c0e83d85` |
+| `docs/memory/HANDOFF.md` | `1467fd605b42aa0e64bbb664ab8fa8228bb1ac505a2d55e904a71a16bd71b576` |
+
+直接 shell 試跑讀取 fixture 路徑時被 Windows sandbox 拒絕。對話驗收改用執行期間臨時啟用的本機 stdio MCP fixture，呼叫相同 UAML 保存／精簡恢復函式及 Git；第二段工具只提供讀取。T01 對話層在上述條件下通過；原生 shell 路徑此次受阻，桌面及 Windows 11 尚未執行。此 fixture 為此次驗收工具，日常 UAML CLI 安裝流程維持原有依賴。[OpenAI Docs 的非互動模式](https://learn.chatgpt.com/docs/non-interactive-mode)
 
 - 2026-11-14 checkpoint 中斷案例涵蓋第一檔前失敗、journal 完成後標記清理失敗、更換 Registry、其他 journal、舊 journal、標記損壞、linked worktree 隔離及 compact CLI 診斷。測試使用合成資料及故障注入。
 
