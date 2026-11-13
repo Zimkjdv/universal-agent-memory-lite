@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-14：私有交易資料權限
+
+- checkpoint journal、原文備份、Fork／知識計畫與原生入口備份使用受限目錄，寫入正文前先驗證暫存檔的權限。
+- 遇到權限風險或無法核對時停止寫入。Unix 舊版唯讀群組／其他權限的子目錄可沿用於已驗證的私有 home。
+
 ### Fixed — 2026-11-14：checkpoint 中斷防護
 
 - 私有 journal 準備完成後，先在該 checkout 的 Git 目錄公布待完成 snapshot ID，再更新記憶檔。recover／validate／migration 回報待完成交易，換用 Registry 也不能啟動另一筆 checkpoint 或 Fork。

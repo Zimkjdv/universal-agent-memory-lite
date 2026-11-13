@@ -222,7 +222,7 @@ registry init 只接受新 home，既有目錄回報 PRIVATE_HOME_EXISTS，不�
 
 Windows 要求檔案系統支援 persistent ACL，於建立時套用受保護 DACL，僅允許目前使用者、SYSTEM 與本機 Administrators，並讓子目錄／檔案繼承。Unix 新目錄以 0700 建立，owner／mode／extended ACL 不能確認時拒絕保存。需要的新父目錄同樣受限，已存在父目錄不變。失敗或競態時不寫私人 payload；可能留下已建立的空目錄，請核對後重試。這不隔離同使用者程序或 OS 管理者，也不提供加密。
 
-既有 home 不會被自動強化，日後手動／外部建立的 artifacts 也可能有不同權限；仍應執行稽核：
+新的 `transactions`、`backups`、`proposals`、`forks`、`supersessions`、`adapter-backups` 目錄即使位於既有 home 下，也會以受限權限建立。寫入正文前會檢查目錄與暫存檔。`PRIVATE_ARTIFACT_UNSAFE` 或 `NATIVE_BACKUP_UNSAFE` 表示應先檢查資料夾、檔案與作業系統權限。原本已在 0700 私有 home 內的 Unix 舊版 0755 子目錄可繼續使用。既有 home、檔案與外部建立的 artifacts 可用下列命令稽核。
 
 ```powershell
 & $pythonPath --registry $registryPath --json registry audit

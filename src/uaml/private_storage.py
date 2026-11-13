@@ -1,9 +1,10 @@
-"""Protect newly created private homes; never change an existing directory ACL."""
+"""Create restricted private storage and verify permissions without changing existing ACLs."""
 import os
+import stat
 from pathlib import Path
 
 from .errors import UamlError
-from .paths import require_private_registry
+from .paths import inside, require_private_registry
 from .permissions import WindowsAcl, posix_inspect
 
 
@@ -80,3 +81,50 @@ def ensure_home(registry_path: Path, *, new_only=False):
     except OSError as exc:
         raise UamlError("PRIVATE_HOME_UNAVAILABLE", "Cannot establish private directory permissions; no private payload was written. Inspect any newly created empty directories.") from exc
     return created
+
+
+def verify_private_permissions(path: Path, *, directory=False, code="PRIVATE_ARTIFACT_UNSAFE"):
+    message = "Private storage permissions could not be verified; inspect the path before retrying."
+    try:
+        info = path.lstat()
+        valid_type = stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode) and info.st_nlink == 1
+        if not valid_type or getattr(info, "st_file_attributes", 0) & 0x400:
+            raise UamlError(code, message)
+        inspector = WindowsAcl().inspect if os.name == "nt" else posix_inspect
+        result = inspector(path)
+        if result["state"] == "RESTRICTED":
+            return
+        # Older Unix installs created 0755 artifact directories inside a 0700
+        # home. The home already prevents access and the child grants no writes.
+        if (os.name != "nt" and directory and not info.st_mode & 0o022
+                and [issue["code"] for issue in result["issues"]] == ["GROUP_OR_OTHER_MODE"]
+                and not path.parent.is_symlink() and posix_inspect(path.parent)["state"] == "RESTRICTED"):
+            return
+        raise UamlError(code, message)
+    except OSError as exc:
+        raise UamlError(code, message) from exc
+
+
+def ensure_private_directory(path: Path, *, code="PRIVATE_ARTIFACT_UNSAFE"):
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        try:
+            if os.name == "nt":
+                WindowsPrivateDirectory().create(path)
+            else:
+                path.mkdir(mode=0o700)
+        except FileExistsError:
+            # A cooperating checkout may have created the same directory.
+            pass
+        except OSError as exc:
+            raise UamlError(code, "Cannot create a restricted private artifact directory.") from exc
+    except OSError as exc:
+        raise UamlError(code, "Cannot inspect the private artifact directory.") from exc
+    verify_private_permissions(path, directory=True, code=code)
+    return path
+
+
+def artifact_directory(registry_path: Path, name: str, *, code="PRIVATE_ARTIFACT_UNSAFE"):
+    ensure_home(registry_path)
+    return ensure_private_directory(inside(registry_path.parent, name), code=code)

@@ -10,7 +10,9 @@ from unittest.mock import patch
 
 from uaml import permissions, private_storage, registry
 from uaml.errors import UamlError
+from uaml.formats import digest
 from uaml.project_memory import checkpoint
+from uaml.storage import write
 
 from .support import Workspace
 
@@ -152,3 +154,59 @@ class PrivateCheckpointTests(Workspace):
         inspector = permissions.WindowsAcl().inspect if os.name == "nt" else permissions.posix_inspect
         self.assertEqual(inspector(missing.parent)["state"], "RESTRICTED")
         self.assertTrue(list((missing.parent / "transactions").iterdir()))
+
+    def test_checkpoint_artifacts_are_private_under_an_existing_shared_home(self):
+        self.bind()
+        shared = self.base / "legacy shared home"
+        shared.mkdir()
+        if os.name == "nt":
+            subprocess.run(["icacls", str(shared), "/grant", "*S-1-1-0:(OI)(CI)R"], capture_output=True, check=True)
+            inspector = permissions.WindowsAcl().inspect
+        else:
+            shared.chmod(0o755)
+            inspector = permissions.posix_inspect
+        self.assertEqual(inspector(shared)["state"], "RISK")
+        result = checkpoint(self.git, shared / "registry.json", "manual")
+        self.assertEqual(result["status"], "CHECKPOINT_SAVED")
+        self.assertEqual(inspector(shared)["state"], "RISK")
+        for name in ("transactions", "backups"):
+            directory = shared / name
+            self.assertEqual(inspector(directory)["state"], "RESTRICTED")
+            self.assertTrue(list(directory.iterdir()))
+            for artifact in directory.iterdir():
+                self.assertEqual(inspector(artifact)["state"], "RESTRICTED")
+
+    def test_unsafe_existing_backup_folder_blocks_checkpoint_before_journal_or_memory_writes(self):
+        self.bind()
+        backups = self.registry.parent / "backups"
+        if os.name == "nt":
+            subprocess.run(["icacls", str(backups), "/grant", "*S-1-1-0:(OI)(CI)R"], capture_output=True, check=True)
+        else:
+            backups.chmod(0o777)
+        original = {path: path.read_bytes() for directory in (backups, self.registry.parent / "transactions",
+                    self.repo / "docs/memory") for path in directory.iterdir()}
+        with self.assertRaises(UamlError) as caught:
+            checkpoint(self.git, self.registry, "manual")
+        self.assertEqual(caught.exception.code, "PRIVATE_ARTIFACT_UNSAFE")
+        self.assertEqual(original, {path: path.read_bytes() for path in original})
+        self.assertEqual(set((self.registry.parent / "transactions").iterdir()),
+                         {path for path in original if path.parent.name == "transactions"})
+
+    def test_private_staging_permission_failure_keeps_existing_target(self):
+        target = self.base / "target.md"
+        target.write_bytes(b"original")
+        with patch("uaml.storage.verify_private_permissions", side_effect=UamlError("PRIVATE_ARTIFACT_UNSAFE", "fixture")):
+            with self.assertRaises(UamlError) as caught:
+                write(target, b"replacement", digest(b"original"), self.base / "private backups")
+        self.assertEqual(caught.exception.code, "PRIVATE_ARTIFACT_UNSAFE")
+        self.assertEqual(target.read_bytes(), b"original")
+        self.assertEqual(list((self.base / "private backups").iterdir()), [])
+
+    @unittest.skipIf(os.name == "nt", "legacy Unix artifact modes")
+    def test_legacy_readable_artifact_directory_is_usable_inside_private_home(self):
+        self.bind()
+        for name in ("transactions", "backups"):
+            (self.registry.parent / name).chmod(0o755)
+        self.assertEqual(checkpoint(self.git, self.registry, "manual")["status"], "CHECKPOINT_SAVED")
+        for name in ("transactions", "backups"):
+            self.assertEqual(stat.S_IMODE((self.registry.parent / name).stat().st_mode), 0o755)

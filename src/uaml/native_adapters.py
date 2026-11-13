@@ -8,8 +8,7 @@ from .binding import load_project
 from .errors import UamlError
 from .formats import digest, json_bytes, read_bytes, safe_metadata, text
 from .paths import inside, require_private_registry
-from .permissions import WindowsAcl, posix_inspect
-from .private_storage import ensure_home
+from .private_storage import artifact_directory
 from .storage import lock, write
 
 MAX_ENTRY_BYTES = 32768
@@ -162,13 +161,7 @@ def install(git, registry_path, agent, expected_plan):
             return {**report, "status": "NATIVE_ADAPTER_ALREADY_INSTALLED", "next_step": "References are unchanged; verify activation in a new agent session."}
         if expected_plan != report["plan_hash"]:
             raise UamlError("WRITE_CONFLICT", "Native plan, instructions, adapter targets, checkout or backup location changed; preview again.")
-        ensure_home(registry_path)
-        ensure_home(backup_root / "placeholder.json")
-        info = backup_root.lstat()
-        inspector = WindowsAcl().inspect if os.name == "nt" else posix_inspect
-        if (backup_root.is_symlink() or getattr(info, "st_file_attributes", 0) & 0x400
-                or inspector(backup_root)["state"] != "RESTRICTED"):
-            raise UamlError("NATIVE_BACKUP_UNSAFE", "Private backup directory permissions are unverified; inspect them manually. No native entry was changed.")
+        artifact_directory(registry_path, "adapter-backups", code="NATIVE_BACKUP_UNSAFE")
         backups = {}
         # Save every original first. A later failure never rolls back user content.
         with lock(backup_root / "write.lock"):
@@ -184,7 +177,7 @@ def install(git, registry_path, agent, expected_plan):
                         if read_bytes(backup) != before:
                             raise UamlError("WRITE_CONFLICT", "An existing native backup differs; inspect it before retrying.")
                     else:
-                        write(backup, before, None)
+                        write(backup, before, None, private=True)
                     backups[relative] = str(backup)
             # Recheck the complete plan after backup preparation, before publication.
             if preview(git, registry_path, agent)["plan_hash"] != expected_plan:

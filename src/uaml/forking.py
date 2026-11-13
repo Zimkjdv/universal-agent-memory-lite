@@ -9,6 +9,7 @@ from .errors import UamlError
 from .formats import (digest, fields, frontmatter, identifier, json_bytes, markdown, memory, now,
                       parse_json, parse_yaml, project, project_link, public_name, read_bytes, safe_metadata, text, yaml_bytes)
 from .paths import inside, local_key, require_local_registry, require_private_registry
+from .private_storage import artifact_directory
 from .project_memory import HANDOFF_BODY, STATE_BODY, exclusions, require_no_pending_checkpoint, validate_checkpoint
 from .storage import lock, write
 
@@ -48,23 +49,24 @@ def prepare(git, registry_path: Path, name: str, vault_id: str):
     after[new["memory"]["checkpoint"]] = json_bytes(checkpoint)
     after[".uaml/project.yaml"] = yaml_bytes(new)  # Identity switches last.
     fork_id, entries = str(uuid4()), []
+    directory = artifact_directory(registry_path, "forks")
     for index, (relative, data) in enumerate(after.items()):
         old = read_bytes(inside(git.root, relative))
         safe_metadata(text(old))
         for suffix, payload in (("before", old), ("after", data)):
-            write(inside(registry_path.parent, f"forks/{fork_id}.{index}.{suffix}"), payload, None)
+            write(inside(directory, f"{fork_id}.{index}.{suffix}"), payload, None, private=True)
         entries.append({"path": relative, "before_hash": digest(old), "after_hash": digest(data)})
     link = {"schema_version": 1, "kind": "project_link", "revision": 1, "project_id": new["project"]["id"],
             **new["binding"], "project_name": name, "state_authority": "repository", "knowledge_ids": []}
     link_bytes = markdown(link, "# Independent fork\n\nState is authoritative in the new repository; no inherited knowledge links.\n")
     if link_path(vault_path, vault_metadata, new).exists():
         raise UamlError("WRITE_CONFLICT", "New project memory location already exists.")
-    write(inside(registry_path.parent, f"forks/{fork_id}.link"), link_bytes, None)
+    write(inside(directory, f"{fork_id}.link"), link_bytes, None, private=True)
     plan = {"schema_version": 1, "kind": "project_fork", "id": fork_id, "git_identity": git.identity(),
             "target_vault_id": vault_id, "target_vault_path": str(vault_path), "vault_hash": vault_hash,
             "source_project_id": old_manifest["project"]["id"], "link_hash": digest(link_bytes), "entries": entries}
     raw = json_bytes(plan)
-    write(inside(registry_path.parent, f"forks/{fork_id}.json"), raw, None)
+    write(inside(directory, f"{fork_id}.json"), raw, None, private=True)
     return inspect(git, registry_path, fork_id)[0]
 
 
@@ -153,6 +155,7 @@ def apply(git, registry_path: Path, fork_id: str, expected_plan: str):
             raise UamlError("WRITE_CONFLICT", "Fork plan changed before locking.")
         if result["status"] == "FORK_ALREADY_APPLIED":
             return result
+        backups = artifact_directory(registry_path, "backups")
 
         def revoke(data):
             data["checkout_grants"] = [grant for grant in data["checkout_grants"]
@@ -163,5 +166,5 @@ def apply(git, registry_path: Path, fork_id: str, expected_plan: str):
             write(target_link, link_bytes, None)
         for path, content in prepared.items():
             if current[path] != digest(content):
-                write(inside(git.root, path), content, current[path], registry_path.parent / "backups")
+                write(inside(git.root, path), content, current[path], backups)
         return {**result, "status": "FORK_APPLIED"}

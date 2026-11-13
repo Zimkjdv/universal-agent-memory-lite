@@ -6,6 +6,7 @@ from .errors import UamlError
 from .formats import (digest, fields, frontmatter, identifier, json_bytes, memory,
                       parse_json, read_bytes, safe_metadata)
 from .paths import inside, local_key, require_local_registry, require_private_registry
+from .private_storage import artifact_directory, verify_private_permissions
 from .project_memory import (checkpoint_marker, clear_checkpoint_marker, pending_checkpoint,
                              pending_checkpoint_error, validate_checkpoint)
 from .storage import lock, write
@@ -100,14 +101,19 @@ def repair(git, registry_path: Path, transaction_id: str, apply=False, expected_
             raise UamlError("WRITE_CONFLICT", "Repair plan changed; preview again before applying.")
         if plan["status"] == "REPAIR_NOT_NEEDED":
             return plan
+        if value["status"] != "complete":
+            verify_private_permissions(journal_path.parent, directory=True)
+        backups = (artifact_directory(registry_path, "backups") if any(
+            current[relative] is not None and current[relative] != digest(data)
+            for relative, data in prepared.items()) else None)
         if pending is None:  # A legacy journal never published a marker.
             write(marker, json_bytes({"schema_version": 1, "snapshot_id": transaction_id}), None)
         # Order is validated: the checkpoint is always published last.
         for relative, data in prepared.items():
             if current[relative] != digest(data):
-                write(inside(git.root, relative), data, current[relative], registry_path.parent / "backups")
+                write(inside(git.root, relative), data, current[relative], backups)
         if value["status"] != "complete":
             value["status"] = "complete"
-            write(journal_path, json_bytes(value), digest(raw))
+            write(journal_path, json_bytes(value), digest(raw), private=True)
         clear_checkpoint_marker(marker, transaction_id)
         return {**plan, "status": "REPAIRED"}

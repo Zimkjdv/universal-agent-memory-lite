@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from .errors import UamlError
 from .formats import digest, json_bytes, now, read_bytes
+from .private_storage import ensure_private_directory, verify_private_permissions
 
 
 @contextmanager
@@ -27,8 +28,11 @@ def lock(path: Path):
             path.unlink()
 
 
-def write(path: Path, data: bytes, expected: str | None, backups: Path | None = None):
-    """Caller holds the resource lock. None means create, never overwrite."""
+def write(path: Path, data: bytes, expected: str | None, backups: Path | None = None, *, private=False):
+    """Caller holds the resource lock. None means create, never overwrite.
+
+    Private payloads use a permission-checked staging file. Backups always do.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     old = None
     try:
@@ -39,15 +43,14 @@ def write(path: Path, data: bytes, expected: str | None, backups: Path | None = 
     if (old is None and expected is not None) or (old is not None and digest(old) != expected):
         raise UamlError("WRITE_CONFLICT", "The target changed or already exists; no overwrite performed.")
     if old is not None and backups is not None:
-        backups.mkdir(parents=True, exist_ok=True)
-        with (backups / f"{uuid4()}.bak").open("xb") as stream:
-            stream.write(old)
-            stream.flush()
-            os.fsync(stream.fileno())
+        ensure_private_directory(backups)
+        write(backups / f"{uuid4()}.bak", old, None, private=True)
     descriptor, temp_name = tempfile.mkstemp(prefix=".uaml-", suffix=".tmp", dir=path.parent)
     temporary = Path(temp_name)
     try:
         with os.fdopen(descriptor, "wb") as stream:
+            if private:
+                verify_private_permissions(temporary)
             stream.write(data)
             stream.flush()
             os.fsync(stream.fileno())

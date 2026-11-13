@@ -9,6 +9,7 @@ from .dedup import catalog_hash
 from .formats import digest, fields, identifier, json_bytes, markdown, now, parse_json, read_bytes, safe_metadata, string, timestamp
 from .knowledge import authorize, pending_transaction, validate
 from .paths import inside
+from .private_storage import artifact_directory
 from .proposals import context, inventory
 from .storage import lock, write
 from .validation import relations
@@ -69,16 +70,17 @@ def prepare(git, registry_path, old_id, new_id, reason):
     if relations(replaced(notes, after)):
         raise UamlError("KNOWLEDGE_RELATION_INVALID", "The proposed replacement would introduce inconsistent or cyclic relations.")
     transaction_id = str(uuid4())
+    directory = artifact_directory(registry_path, "supersessions")
     entries = []
     for index, item in enumerate((old_id, new_id)):
         for suffix, payload in (("before", originals[index]), ("after", after[index])):
-            write(inside(registry_path.parent, f"supersessions/{transaction_id}.{index}.{suffix}"), payload, None)
+            write(inside(directory, f"{transaction_id}.{index}.{suffix}"), payload, None, private=True)
         entries.append({"id": item, "before_hash": digest(originals[index]), "after_hash": digest(after[index])})
     value = {"schema_version": 1, "kind": "knowledge_supersession", "id": transaction_id,
              "project_id": manifest["project"]["id"], "context": context(git, manifest, vault_path, root),
              "reason": reason, "updated_at": time, "entries": entries,
              "other_catalog_hash": catalog_hash([n for n in notes if n["metadata"]["id"] not in (old_id, new_id)])}
-    write(inside(registry_path.parent, f"supersessions/{transaction_id}.json"), json_bytes(value), None)
+    write(inside(directory, f"{transaction_id}.json"), json_bytes(value), None, private=True)
     return inspect(git, registry_path, transaction_id)[0]
 
 
@@ -156,12 +158,13 @@ def apply(git, registry_path, transaction_id, expected_plan):
             raise UamlError("WRITE_CONFLICT", "Supersession plan or selected Vault changed after review.")
         if report["status"] == "SUPERSESSION_ALREADY_APPLIED":
             return report
+        backups = artifact_directory(registry_path, "backups")
         marker_path = inside(vault_path, ".uaml/knowledge-transaction.json")
         if not report["pending"]:
             write(marker_path, json_bytes(marker), None)
         for entry, payload in zip(value["entries"], after):
             if current[entry["id"]] != entry["after_hash"]:
-                write(inside(root, f"{entry['id']}.md"), payload, current[entry["id"]], registry_path.parent / "backups")
+                write(inside(root, f"{entry['id']}.md"), payload, current[entry["id"]], backups)
         # Verify the entire projected catalog before releasing readers. A failed
         # or interrupted operation deliberately leaves the marker in place.
         notes = inventory(root)
@@ -181,7 +184,7 @@ def apply(git, registry_path, transaction_id, expected_plan):
                 raise
             old_receipt = None
         if receipt != old_receipt:
-            write(receipt_path, receipt, digest(old_receipt) if old_receipt is not None else None, registry_path.parent / "backups")
+            write(receipt_path, receipt, digest(old_receipt) if old_receipt is not None else None, backups)
         marker_path.unlink()  # Only the exact tool-owned marker under the Vault lock.
     return {**report, "status": "SUPERSESSION_APPLIED", "pending": False,
             "next_step": "Both links are saved; originals remain in the private plan/backups. Verify applicability before using the replacement."}

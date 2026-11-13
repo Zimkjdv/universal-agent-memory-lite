@@ -168,7 +168,7 @@ class NativeAdapterTests(Workspace):
         folder = self.registry.parent / "adapter-backups"
         folder.mkdir()
         plan = self.preview()
-        inspector = "uaml.native_adapters.WindowsAcl.inspect" if os.name == "nt" else "uaml.native_adapters.posix_inspect"
+        inspector = "uaml.private_storage.WindowsAcl.inspect" if os.name == "nt" else "uaml.private_storage.posix_inspect"
         with patch(inspector, return_value={"state": "RISK", "issues": []}), self.assertRaises(UamlError) as caught:
             self.apply(plan)
         self.assertEqual(caught.exception.code, "NATIVE_BACKUP_UNSAFE")
@@ -235,8 +235,8 @@ class NativeAdapterTests(Workspace):
     def test_changes_during_backup_preparation_block_all_native_writes(self):
         (self.repo / "AGENTS.md").write_bytes(b"original rules\n")
         plan = self.preview()
-        def edit_during_backup(path, *args):
-            result = write(path, *args)
+        def edit_during_backup(path, *args, **kwargs):
+            result = write(path, *args, **kwargs)
             if path.suffix == ".before":
                 (self.repo / "AGENTS.md").write_bytes(b"concurrent user change\n")
             return result

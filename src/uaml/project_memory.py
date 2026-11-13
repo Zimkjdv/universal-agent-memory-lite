@@ -9,6 +9,7 @@ from .formats import (digest, fields, frontmatter, identifier, json_bytes, markd
                       safe_metadata, timestamp, vault, yaml_bytes)
 from .git_state import Git
 from .paths import inside, require_local_registry, require_private_registry
+from .private_storage import artifact_directory
 from .storage import lock, write
 
 STATE_BODY = """# Project State
@@ -143,10 +144,11 @@ def init_project(git: Git, registry_path: Path, vault_id: str, name: str):
         raise UamlError("WRITE_CONFLICT", "Initialization would overwrite existing files.")
     with lock(inside(git.root, ".uaml/write.lock")), lock(inside(path, ".uaml/write.lock")):
         marker = require_no_pending_checkpoint(git)
+        transactions = artifact_directory(registry_path, "transactions")
         # No cross-filesystem rollback: a partial initialization stays visible for diagnosis.
         write(targets[0], yaml_bytes(manifest), None)
         write(targets[1], markdown(link, "# Project link\n\nCurrent state and handoff are authoritative in the repository.\n"), None)
-        _save(git, registry_path, manifest, "uaml", marker, initial=True)
+        _save(git, registry_path, manifest, "uaml", marker, transactions, initial=True)
     return {"status": "PROJECT_INITIALIZED", "project": manifest["project"], "binding": manifest["binding"],
             "next_step": "Review .uaml/project.yaml, then run project trust to approve this checkout."}
 
@@ -159,10 +161,11 @@ def checkpoint(git: Git, registry_path: Path, agent: str):
     manifest, _ = load_project(git)
     with lock(inside(git.root, ".uaml/write.lock")):
         marker = require_no_pending_checkpoint(git)
-        return _save(git, registry_path, manifest, agent, marker, initial=False)
+        transactions = artifact_directory(registry_path, "transactions")
+        return _save(git, registry_path, manifest, agent, marker, transactions, initial=False)
 
 
-def _save(git, registry_path, manifest, agent, marker, initial):
+def _save(git, registry_path, manifest, agent, marker, transactions, initial):
     snapshot_id, updated = str(uuid4()), now()
     observation = git.observe(exclusions(manifest))
     prepared, previous, originals, prior_snapshots = {}, {}, {}, []
@@ -200,33 +203,34 @@ def _save(git, registry_path, manifest, agent, marker, initial):
     # repair can finish the same snapshot without inventing unsaved information.
     prepared[manifest["memory"]["checkpoint"]] = json_bytes(checkpoint_value)
     originals[manifest["memory"]["checkpoint"]] = old_checkpoint
-    registry.ensure_home(registry_path)
+    backups = artifact_directory(registry_path, "backups") if not initial else None
     entries = []
     for index, (relative, data) in enumerate(prepared.items()):
-        after_blob = f"transactions/{snapshot_id}.{index}.after"
-        before_blob = f"transactions/{snapshot_id}.{index}.before" if originals[relative] is not None else None
-        write(inside(registry_path.parent, after_blob), data, None)
+        after_blob = f"{snapshot_id}.{index}.after"
+        before_blob = f"{snapshot_id}.{index}.before" if originals[relative] is not None else None
+        write(inside(transactions, after_blob), data, None, private=True)
         if before_blob is not None:
-            write(inside(registry_path.parent, before_blob), originals[relative], None)
+            write(inside(transactions, before_blob), originals[relative], None, private=True)
         entries.append({"path": relative, "before_hash": digest(originals[relative]) if originals[relative] is not None else None,
-                        "after_hash": digest(data), "before_blob": before_blob, "after_blob": after_blob})
-    journal = inside(registry_path.parent, f"transactions/{snapshot_id}.json")
+                        "after_hash": digest(data), "before_blob": f"transactions/{before_blob}" if before_blob else None,
+                        "after_blob": f"transactions/{after_blob}"})
+    journal = inside(transactions, f"{snapshot_id}.json")
     journal_value = {"schema_version": 2, "repository_root": str(git.root), "project_id": manifest["project"]["id"],
                      "binding_fingerprint": digest(json_bytes(manifest)), "entries": entries,
                      "status": "prepared", "checkpoint": checkpoint_value,
                      "previous_hashes": previous, "previous_checkpoint_hash": digest(old_checkpoint) if old_checkpoint else None}
     prepared_journal = json_bytes(journal_value)
-    write(journal, prepared_journal, None)
+    write(journal, prepared_journal, None, private=True)
     # Publish the checkout-local marker before changing any checkpoint file.
     write(marker, json_bytes({"schema_version": 1, "snapshot_id": snapshot_id}), None)
     for relative, data in prepared.items():
         if relative == manifest["memory"]["checkpoint"]:
             continue
-        write(inside(git.root, relative), data, previous[relative], registry_path.parent / "backups")
+        write(inside(git.root, relative), data, previous[relative], backups)
     write(checkpoint_path, json_bytes(checkpoint_value), digest(old_checkpoint) if old_checkpoint else None,
-          registry_path.parent / "backups")
+          backups)
     journal_value["status"] = "complete"
-    write(journal, json_bytes(journal_value), digest(prepared_journal))
+    write(journal, json_bytes(journal_value), digest(prepared_journal), private=True)
     clear_checkpoint_marker(marker, snapshot_id)
     return {"status": "CHECKPOINT_SAVED", "snapshot_id": snapshot_id,
             "files": checkpoint_value["files"], "git": observation}

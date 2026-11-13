@@ -9,6 +9,7 @@ from .errors import UamlError
 from .formats import digest, fields, identifier, json_bytes, parse_json, read_bytes
 from .knowledge import authorize, record, scan, validate
 from .paths import inside
+from .private_storage import artifact_directory
 from .storage import lock, write
 
 
@@ -68,11 +69,12 @@ def propose(git, registry_path: Path, source: Path):
              "before_hash": old["sha256"] if old else None, "after_hash": digest(after),
              "catalog_hash": catalog_hash(notes), "similar": found["similar"]}
     # Private local artifacts; the Vault is unchanged until explicit apply.
-    payload_path = inside(registry_path.parent, f"proposals/{proposal_id}.md")
-    proposal_path = inside(registry_path.parent, f"proposals/{proposal_id}.json")
-    write(payload_path, after, None)
+    directory = artifact_directory(registry_path, "proposals")
+    payload_path = inside(directory, f"{proposal_id}.md")
+    proposal_path = inside(directory, f"{proposal_id}.json")
+    write(payload_path, after, None, private=True)
     encoded = json_bytes(value)
-    write(proposal_path, encoded, None)
+    write(proposal_path, encoded, None, private=True)
     diff = "".join(difflib.unified_diff((old["raw"].decode("utf-8-sig") if old else "").splitlines(True),
                                          after.decode("utf-8-sig").splitlines(True), fromfile="current", tofile="proposed"))
     diff_bytes = diff.encode("utf-8")
