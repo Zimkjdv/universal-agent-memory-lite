@@ -4,6 +4,8 @@
 
 雛形額外限制：每份檔案最多 256 KiB、YAML 深度最多 16、extensions 只能是空物件、專案記憶僅接受下列標準三個路徑。不支援自訂位置或未知擴充的寫入，避免擴大範圍。
 
+日期與時間在 YAML 解析後維持字串，含時區的 timestamp 欄位仍由 Schema 驗證。JSON／YAML 的數值必須有限；NaN、Infinity 或解析後溢位會回報 MEMORY_CORRUPT。
+
 ## 共通約束
 
 - schema_version 與產品版本分開；首版接受 1，沒有舊 UAML 相容包袱。

@@ -23,6 +23,16 @@ class RecoveryTests(Workspace):
         self.assertIn("實作登入功能", result["sources"][1]["untrusted_markdown"])
         self.assertEqual(result["sources"][1]["metadata"]["source_agent"], "codex")
 
+    def test_manually_unquoted_timestamp_can_be_checkpointed(self):
+        self.bind()
+        note = self.repo / "docs/memory/HANDOFF.md"
+        raw = note.read_text(encoding="utf-8")
+        raw = raw.replace("updated_at: '", "updated_at: ").replace("Z'\n", "Z\n")
+        self.assertNotEqual(raw.encode(), note.read_bytes())
+        note.write_text(raw, encoding="utf-8")
+        self.assertEqual(checkpoint(self.git, self.registry, "manual")["status"], "CHECKPOINT_SAVED")
+        self.assertEqual(recover(self.git, self.registry)["status"], "RECOVERED")
+
     def test_same_dirty_filename_but_changed_content_is_stale(self):
         (self.repo / "app.py").write_text("first dirty version\n")
         self.bind()

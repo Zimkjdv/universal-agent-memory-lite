@@ -15,6 +15,34 @@ class ParsingTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(UamlError):
                 parse_yaml(value)
 
+    def test_yaml_dates_and_times_remain_json_compatible_strings(self):
+        import json
+        from uaml.formats import safe_metadata
+
+        value = parse_yaml("date: 2026-11-21\nupdated_at: 2026-11-21T08:30:00Z\nnested: [2026-11-21]\n")
+        self.assertEqual(value["date"], "2026-11-21")
+        self.assertEqual(value["updated_at"], "2026-11-21T08:30:00Z")
+        self.assertEqual(value["nested"], ["2026-11-21"])
+        safe_metadata(value)
+        self.assertEqual(json.loads(json.dumps(value)), value)
+
+    def test_json_and_yaml_reject_nonfinite_numbers(self):
+        for value in ("NaN", "Infinity", "-Infinity", "1e9999", "-1e9999"):
+            with self.subTest(format="json", value=value):
+                with self.assertRaises(UamlError) as error:
+                    parse_json(('{"number": ' + value + '}').encode())
+                self.assertEqual(error.exception.code, "MEMORY_CORRUPT")
+        for value in (".nan", ".inf", "-.Inf", "1.0e+9999"):
+            with self.subTest(format="yaml", value=value):
+                with self.assertRaises(UamlError) as error:
+                    parse_yaml("number: " + value)
+                self.assertEqual(error.exception.code, "MEMORY_CORRUPT")
+
+    def test_finite_json_and_yaml_numbers_remain_supported(self):
+        for value in (parse_json(b'{"number": 1.25, "nested": [-2e-3, 0, true, null]}'),
+                      parse_yaml("number: 1.25\nnested: [-0.002, 0, true, null]")):
+            self.assertEqual(value, {"number": 1.25, "nested": [-0.002, 0, True, None]})
+
     def test_unicode_frontmatter_and_crlf(self):
         header, body = frontmatter("---\r\ntitle: 中文\r\n---\r\n# 內容\r\n".encode())
         self.assertEqual(header["title"], "中文")

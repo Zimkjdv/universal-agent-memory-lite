@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 import os
 import re
 from datetime import datetime, timezone
@@ -59,6 +60,13 @@ def pairs(items):
     return result
 
 
+def finite_float(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise UamlError("MEMORY_CORRUPT", "Nonfinite numbers are prohibited.")
+    return number
+
+
 def parse_yaml(data: str) -> dict:
     try:
         depth = 0
@@ -84,6 +92,9 @@ def parse_yaml(data: str) -> dict:
             return pairs((loader.construct_object(k), loader.construct_object(v)) for k, v in node.value)
 
         Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, mapping)
+        Loader.add_constructor("tag:yaml.org,2002:timestamp", lambda loader, node: loader.construct_scalar(node))
+        Loader.add_constructor("tag:yaml.org,2002:float",
+                               lambda loader, node: finite_float(loader.construct_yaml_float(node)))
         value = yaml.load(data, Loader=Loader)
     except (yaml.YAMLError, ValueError, RecursionError) as exc:
         raise UamlError("MEMORY_CORRUPT", "Invalid YAML document.") from exc
@@ -94,7 +105,7 @@ def parse_yaml(data: str) -> dict:
 
 def parse_json(data: bytes) -> dict:
     try:
-        value = json.loads(text(data), object_pairs_hook=pairs)
+        value = json.loads(text(data), object_pairs_hook=pairs, parse_float=finite_float, parse_constant=finite_float)
     except (ValueError, RecursionError) as exc:
         raise UamlError("MEMORY_CORRUPT", "Invalid JSON document.") from exc
     if not isinstance(value, dict):

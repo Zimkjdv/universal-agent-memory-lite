@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-21：YAML／JSON 純量解析
+
+- YAML 日期與時間保留字串，手動省略 timestamp 引號後仍可保存。JSON／YAML 拒絕 NaN、Infinity 及指數溢位等非有限數值，回報 MEMORY_CORRUPT。
+
 ### Fixed — 2026-11-21：恢復快照一致性
 
 - recover 在回傳前重新核對 Manifest、checkpoint 與已讀取來源的 hash。讀取期間有變更時回報 MEMORY_CHANGED_DURING_READ，清除本次來源結果，供下一次恢復重新取得。

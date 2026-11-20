@@ -81,6 +81,10 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 使用隔離 Repo／Vault，在讀取 Handoff 後完成另一筆 checkpoint、手動編輯或移除來源，確認恢復會降級並清除本次來源結果。compact、validate 與 migration 沿用同一診斷。另確認 validate 的章節檢查使用回報 hash 所對應的已捕捉正文。測試採確定性的讀取邊界注入。
 
+### 2026-11-21 格式純量回歸
+
+驗證 YAML 日期／時間與巢狀日期可安全序列化為 JSON，手動移除 Handoff timestamp 的引號後可重新 checkpoint／recover。JSON 與 YAML 的 NaN、Infinity、負無限大及指數溢位均拒絕，有限浮點與既有純量格式保留。
+
 ## 16 項核心驗收
 
 | ID | 前置條件 | 操作 | 預期結果與證據 |
