@@ -77,6 +77,10 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 記錄案例 ID、時間、OS/build、Agent/Git/UAML 版本、fixtures、前後 hash、CLI JSON、必要對話節錄與判定。使用合成資料／假憑證，不發布私人 Vault。結果為 passed/failed/not_run/unknown；未執行須有原因。
 
+### 2026-11-21 恢復一致性回歸
+
+使用隔離 Repo／Vault，在讀取 Handoff 後完成另一筆 checkpoint、手動編輯或移除來源，確認恢復會降級並清除本次來源結果。compact、validate 與 migration 沿用同一診斷。另確認 validate 的章節檢查使用回報 hash 所對應的已捕捉正文。測試採確定性的讀取邊界注入。
+
 ## 16 項核心驗收
 
 | ID | 前置條件 | 操作 | 預期結果與證據 |

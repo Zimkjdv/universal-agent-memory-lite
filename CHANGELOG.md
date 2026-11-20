@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-21：恢復快照一致性
+
+- recover 在回傳前重新核對 Manifest、checkpoint 與已讀取來源的 hash。讀取期間有變更時回報 MEMORY_CHANGED_DURING_READ，清除本次來源結果，供下一次恢復重新取得。
+- validate 的章節與完整性檢查使用同一份已恢復正文，確保檢查結果對應回報的來源 hash。
+
 ### Verified — 2026-11-14：checkpoint 程序終止後的修復
 
 - 實際終止 checkpoint 子程序，驗證五個公布階段的診斷、前後檔案 hash、鎖防護與原快照補完。安裝指南補上已終止程序的遺留鎖處理方式。

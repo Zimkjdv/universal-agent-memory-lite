@@ -87,7 +87,7 @@ def relations(notes):
 
 
 def validate(git, registry_path, include_knowledge=False):
-    recovery = recover(git, registry_path)
+    recovery = recover(git, registry_path, body_limit=None)
     diagnostics = list(recovery["diagnostics"])
     checks = [{"area": "binding", "status": recovery["binding"]["status"]}]
     checked_files = []
@@ -96,7 +96,7 @@ def validate(git, registry_path, include_knowledge=False):
         for source in recovery["sources"]:
             kind = source["metadata"]["kind"]
             try:
-                _, body = frontmatter(read_bytes(inside(git.root, source["path"])))
+                body = source["untrusted_markdown"]
                 issues = sections(body, kind, source["path"])
                 diagnostics.extend(issues)
                 checks.append({"area": kind, "status": "ISSUES" if issues or not source["checkpoint_verified"] else "VALID",

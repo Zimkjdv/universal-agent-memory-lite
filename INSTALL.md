@@ -198,6 +198,8 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 
 journal 已完成但仍有標記時，使用相同的 repair 流程核對三檔並清除標記。舊 schema_version 1 journal 會回報 REPAIR_UNSUPPORTED，需人工核對備份。若 `--apply` 回報 `WRITE_CONFLICT` 且 `.uaml/write.lock` 仍在，先核對 lock 裡的 `pid`、`created_at` 與實際程序。確認原持有者已終止且目前沒有其他寫入者後，可將該 lock 移到私人位置保留，再重新預覽與套用。Vault 反向索引初始化若在 journal 建立前中斷，需人工核對初始化結果。
 
+若恢復回報 MEMORY_CHANGED_DURING_READ，表示本次讀取期間來源內容已改變，請等寫入完成後重新執行恢復。讀取失敗會保留對應診斷。本次來源結果會清空，避免接手者使用不同時間的內容。validate 使用同一份已恢復正文核對章節與來源 hash。
+
 ## 唯讀完整性檢查
 
 ```powershell
