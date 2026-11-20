@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-21：Knowledge 目錄授權範圍
+
+- 知識讀寫與明確副本比較會先檢查 Knowledge 根目錄及其 Vault 內父目錄。junction、symlink、其他 reparse point 或一般檔案會回報 UNSAFE_PATH，阻擋被轉向的筆記內容讀取。
+
 ### Fixed — 2026-11-21：寫入前的文件大小檢查
 
 - 安全寫入先確認 UTF-8 bytes 未超過 256 KiB，再建立目錄、備份與暫存檔，超限時保留原目標。

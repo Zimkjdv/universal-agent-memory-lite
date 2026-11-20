@@ -85,6 +85,8 @@ compact 固定輸出 JSON，預設最多 32768 UTF-8 bytes（包含排版及最�
 
 範圍只限已綁定 Vault 的 layout.knowledge，不授權整個 Vault。write 包含 read；重新執行不帶 --knowledge 的 trust 會重設為 none。
 
+Knowledge 根目錄及其 Vault 內父目錄必須為一般目錄。即使 junction／symlink 的目的地仍在同一 Vault，工具也會回報 UNSAFE_PATH。請先核對實際位置與目錄配置，再重新執行。
+
 複製 [知識範本](examples/knowledge-template.md)，替換 UUID、source_project_ids（目前 .uaml/project.yaml 的 project.id）、時間、環境與內容，然後：
 
 ```powershell

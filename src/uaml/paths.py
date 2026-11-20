@@ -1,5 +1,6 @@
 import os
 import re
+import stat
 from pathlib import Path, PureWindowsPath
 
 from .errors import UamlError
@@ -28,6 +29,23 @@ def inside(root: Path, relative: str) -> Path:
         target.resolve().relative_to(root)
     except (ValueError, OSError, RuntimeError) as exc:
         raise UamlError("UNSAFE_PATH", "Path or filesystem link leaves its allowed root.") from exc
+    return target
+
+
+def unlinked_directory(root: Path, relative: str) -> Path:
+    """Keep a granted subtree rooted in ordinary directories under its Vault."""
+    target = inside(root, relative)
+    current = root.resolve()
+    for part in relative.split("/"):
+        current = current / part
+        try:
+            info = current.lstat()
+        except FileNotFoundError:
+            break
+        except OSError as exc:
+            raise UamlError("READ_FAILED", "Cannot inspect the authorized directory path.") from exc
+        if not stat.S_ISDIR(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+            raise UamlError("UNSAFE_PATH", "The authorized directory and its parents must be ordinary directories.")
     return target
 
 

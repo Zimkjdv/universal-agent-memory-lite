@@ -9,7 +9,7 @@ from .binding import load_project, resolve
 from .errors import UamlError
 from .formats import (MAX_DOCUMENT, base, digest, fields, frontmatter, identifier, json_bytes, read_at_most, read_bytes,
                       parse_json, safe_metadata, string, timestamp)
-from .paths import inside
+from .paths import inside, unlinked_directory
 from .storage import lock, write
 
 MAX_FILES = 200
@@ -140,7 +140,7 @@ def authorize(git, registry_path: Path, write_access=False, *, allow_pending=Fal
     if registry.selected(current_registry, manifest["binding"]["vault_id"]) != vault_path:
         raise UamlError("WRITE_CONFLICT", "Vault selection changed during authorization.")
     guard(manifest, current_registry, result["vault_fingerprint"], include_knowledge=True)
-    return manifest, vault_path, inside(vault_path, result["vault_layout"]["knowledge"])
+    return manifest, vault_path, unlinked_directory(vault_path, result["vault_layout"]["knowledge"])
 
 
 def record(path: Path):

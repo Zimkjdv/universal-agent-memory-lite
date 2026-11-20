@@ -91,6 +91,10 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 2026-11-21：從 sdist 建置 wheel，在乾淨 venv 使用本地 wheelhouse 離線安裝後，artifact inventory、module origin、pip check、示範及完整 suite 均通過。共 269 項案例，267 項通過、2 項 POSIX 專屬案例於 Windows 跳過。
 
+### 2026-11-21 Knowledge 目錄範圍回歸
+
+使用 Windows 真實 junction／Unix symlink 將 Knowledge 或其父目錄轉向同一 Vault 內另一區域，確認 search／get／add 在讀取筆記前拒絕。明確 vault compare --knowledge 也拒絕連結目錄。一般檔案佔據 Knowledge 目錄時提供穩定診斷；既有一般與缺失目錄案例持續驗證。
+
 ## 16 項核心驗收
 
 | ID | 前置條件 | 操作 | 預期結果與證據 |

@@ -6,7 +6,7 @@ from .binding import link_path, load_project, resolve
 from .dedup import catalog_hash
 from .errors import UamlError
 from .formats import digest, frontmatter, json_bytes, now, project_link, read_bytes
-from .paths import inside, local_key
+from .paths import inside, local_key, unlinked_directory
 
 MAX_COPIES = 8
 
@@ -48,7 +48,7 @@ def collect(manifest, value, expected_vault_hash, include_knowledge=False):
                 observation["project_link_hash"] = "missing"
             if include_knowledge:
                 from .knowledge import scan
-                notes, issues, complete = scan(inside(path, metadata["layout"]["knowledge"]))
+                notes, issues, complete = scan(unlinked_directory(path, metadata["layout"]["knowledge"]))
                 if not complete:
                     raise UamlError("REPLICA_UNVERIFIED", "A replica knowledge scan is incomplete; resolve its errors before selection.")
                 observation["knowledge_hash"] = catalog_hash(notes)

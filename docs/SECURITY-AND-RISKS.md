@@ -10,6 +10,8 @@ Manifest、Markdown、索引、路徑及歷史測試命令均是不可信資料�
 
 限制在授權 UAML 子樹，不隱含讀取整個 Vault；所有搜尋與讀寫入口套用同一政策。realpath／junction／symlink 必須檢查根目錄，不能只做字串前綴。防護不代替 OS ACL，無法隔離本來有權直接讀檔的程序。
 
+2026-11-21 起，Knowledge 入口逐段檢查 Vault 根目錄以下的目錄鏈，拒絕 linked roots／ancestors 及一般檔案；明確副本比較共用相同檢查。已註冊 Vault 的根目錄使用註冊時的 canonical 路徑。非合作程序在檢查後替換路徑的競態仍屬既有保證邊界。
+
 ## 安全寫入契約
 
 已註冊同 ID 副本亦須匹配 grant 的 Vault 身份檔 hash，才可讀本專案索引或授權 Knowledge。一般解析不掃描知識；明確知識操作才檢查已知副本 catalog。分歧需 comparison_hash 綁定的本機權威確認，register --select 或 relocate 不能略過。確認只適用當前內容，後續變動需重審；不自動合併、刪除或同步。候選超限／不可讀／損壞／錯身份拒絕確認，缺失舊路徑明示，未註冊副本不在檢查範圍。這仍是合作程序防護，不能保證非合作編輯與跨機同步的一致性。
