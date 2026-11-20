@@ -180,6 +180,7 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 - 若 Git 報 dubious ownership，先確認檔案擁有者；請以 Repository 擁有者帳號執行，或自行審核 Git 信任設定。工具不修改 safe.directory，也刻意不接受環境內 GIT_DIR/GIT_CONFIG_* 覆寫，避免解析錯 Repo。
 - 遺留 `.uaml/write.lock` 或 Registry `.lock`：先確認沒有活程序，不自動刪除或按鎖齡搶鎖。
 - `FILE_IN_USE` 表示 Windows 回報檔案佔用或鎖定，請先關閉持有檔案的應用程式。`READ_DENIED` 或 `WRITE_DENIED` 則先檢查權限及唯讀屬性。若 checkpoint 已公布待完成標記，請用原 Registry 預覽 `repair` 後再續做。
+- DOCUMENT_TOO_LARGE 表示完整文件超過 256 KiB。請縮短正文或 metadata，為下一次保存保留空間；checkpoint 與知識替代加入的新 metadata 也計入上限。
 - 半完成 checkpoint：停止重存，使用下列預覽／套用流程；不要盲目刪除 checkpoint 或搶鎖。
 - 雛形只接受標準三個 docs/memory 路徑；自訂路徑尚未開放。
 - 讀寫限本機合作程序。新建私有 home 有受限權限保護，既有目錄保持原權限；非合作編輯競態仍待驗收。

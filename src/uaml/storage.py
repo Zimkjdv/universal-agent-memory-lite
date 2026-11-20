@@ -6,7 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from .errors import UamlError, file_access_error, windows_sharing_error
-from .formats import digest, json_bytes, now, read_bytes
+from .formats import check_document_size, digest, json_bytes, now, read_bytes
 from .private_storage import ensure_private_directory, verify_private_permissions
 
 
@@ -33,6 +33,7 @@ def write(path: Path, data: bytes, expected: str | None, backups: Path | None = 
 
     Private payloads use a permission-checked staging file. Backups always do.
     """
+    check_document_size(data)
     try:
         _write(path, data, expected, backups, private)
     except OSError as exc:

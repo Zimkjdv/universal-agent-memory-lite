@@ -85,6 +85,12 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 驗證 YAML 日期／時間與巢狀日期可安全序列化為 JSON，手動移除 Handoff timestamp 的引號後可重新 checkpoint／recover。JSON 與 YAML 的 NaN、Infinity、負無限大及指數溢位均拒絕，有限浮點與既有純量格式保留。
 
+### 2026-11-21 寫入大小邊界回歸
+
+建立與覆寫超限內容時，確認原目標及備份目錄保持原狀。以 Unicode bytes 驗證恰好 256 KiB 的內容可正常讀寫。另將 Handoff 與舊知識筆記填至上限，驗證 metadata 增長時 checkpoint／supersede 會在建立 payload 前拒絕，逐檔核對 Repo、Vault 與私人 artifacts 未變動。縮短 Handoff 後可再次成功保存。
+
+2026-11-21：從 sdist 建置 wheel，在乾淨 venv 使用本地 wheelhouse 離線安裝後，artifact inventory、module origin、pip check、示範及完整 suite 均通過。共 269 項案例，267 項通過、2 項 POSIX 專屬案例於 Windows 跳過。
+
 ## 16 項核心驗收
 
 | ID | 前置條件 | 操作 | 預期結果與證據 |

@@ -6,7 +6,7 @@ from unittest.mock import patch
 from uaml import knowledge, supersession
 from uaml.binding import trust
 from uaml.errors import UamlError
-from uaml.formats import digest, frontmatter, json_bytes, markdown
+from uaml.formats import MAX_DOCUMENT, digest, frontmatter, json_bytes, markdown
 from uaml.proposals import propose
 from uaml.storage import lock, write
 from uaml.validation import relations, validate
@@ -50,6 +50,14 @@ class SupersessionTests(KnowledgeWorkspace):
         self.assertEqual(len(plan["review_payloads"]), 2)
         self.assertIn("superseded_by", plan["untrusted_diff"])
         self.assertEqual(plan["applicability"]["replacement"], self.new["applicability"])
+
+    def test_supersession_size_growth_leaves_vault_and_private_artifacts_intact(self):
+        note = self.root / f"{self.old['id']}.md"
+        raw = note.read_bytes()
+        note.write_bytes(raw + b"x" * (MAX_DOCUMENT - len(raw)))
+        before = {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()}
+        self.assert_code("DOCUMENT_TOO_LARGE", self.prepare)
+        self.assertEqual(before, {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()})
 
     def test_apply_preserves_bodies_evidence_and_provenance_and_links_both_notes(self):
         plan = self.prepare()

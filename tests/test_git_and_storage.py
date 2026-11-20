@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from uaml.errors import UamlError
-from uaml.formats import digest
+from uaml.formats import MAX_DOCUMENT, digest, read_bytes
 from uaml.git_state import Git
 from uaml.storage import lock, write
 
@@ -66,6 +66,31 @@ class StorageTests(Workspace):
         write(target, b"second", digest(b"first"), backups)
         self.assertEqual(target.read_bytes(), b"second")
         self.assertEqual([p.read_bytes() for p in backups.iterdir()], [b"first"])
+
+    def test_oversize_create_does_not_publish_or_create_parent(self):
+        target = self.base / "new-parent" / "note.md"
+        with self.assertRaises(UamlError) as caught:
+            write(target, b"x" * (MAX_DOCUMENT + 1), None)
+        self.assertEqual(caught.exception.code, "DOCUMENT_TOO_LARGE")
+        self.assertFalse(target.parent.exists())
+
+    def test_oversize_update_keeps_original_and_creates_no_backup(self):
+        target = self.base / "note.md"
+        target.write_bytes(b"original")
+        backups = self.base / "size-backups"
+        with self.assertRaises(UamlError) as caught:
+            write(target, b"x" * (MAX_DOCUMENT + 1), digest(b"original"), backups)
+        self.assertEqual(caught.exception.code, "DOCUMENT_TOO_LARGE")
+        self.assertEqual(target.read_bytes(), b"original")
+        self.assertFalse(backups.exists())
+        self.assertEqual(list(self.base.glob(".uaml-*.tmp")), [])
+
+    def test_exact_byte_limit_remains_readable_for_unicode_content(self):
+        target = self.base / "exact.md"
+        data = "中".encode() * (MAX_DOCUMENT // 3) + b"x" * (MAX_DOCUMENT % 3)
+        self.assertEqual(len(data), MAX_DOCUMENT)
+        write(target, data, None)
+        self.assertEqual(read_bytes(target), data)
 
     def test_live_process_lock_is_not_stolen(self):
         path = self.base / "writer.lock"

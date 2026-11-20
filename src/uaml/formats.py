@@ -39,9 +39,13 @@ def read_at_most(path: Path, size: int, missing="MEMORY_MISSING") -> bytes:
 
 def read_bytes(path: Path, missing="MEMORY_MISSING") -> bytes:
     result = read_at_most(path, MAX_DOCUMENT + 1, missing)
-    if len(result) > MAX_DOCUMENT:
-        raise UamlError("DOCUMENT_TOO_LARGE", "Document exceeds the 256 KiB prototype limit.")
+    check_document_size(result)
     return result
+
+
+def check_document_size(data: bytes):
+    if len(data) > MAX_DOCUMENT:
+        raise UamlError("DOCUMENT_TOO_LARGE", "Document exceeds the 256 KiB prototype limit.")
 
 
 def text(data: bytes) -> str:

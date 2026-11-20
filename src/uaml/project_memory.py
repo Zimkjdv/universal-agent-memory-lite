@@ -4,7 +4,7 @@ from uuid import uuid4
 from . import registry
 from .binding import link_path, load_project
 from .errors import UamlError
-from .formats import (digest, fields, frontmatter, identifier, json_bytes, markdown,
+from .formats import (check_document_size, digest, fields, frontmatter, identifier, json_bytes, markdown,
                       memory, now, parse_json, project, public_name, read_bytes,
                       safe_metadata, timestamp, vault, yaml_bytes)
 from .git_state import Git
@@ -185,6 +185,7 @@ def _save(git, registry_path, manifest, agent, marker, transactions, initial):
                       updated_at=updated, source_agent=agent, git=observation["snapshot"])
         memory(header, kind, manifest["project"]["id"])
         new = markdown(header, body)
+        check_document_size(new)
         safe_metadata(new.decode("utf-8"))
         prepared[relative] = new
         previous[relative] = digest(old) if old is not None else None

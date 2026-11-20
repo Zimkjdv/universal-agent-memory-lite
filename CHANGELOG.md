@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-21：寫入前的文件大小檢查
+
+- 安全寫入先確認 UTF-8 bytes 未超過 256 KiB，再建立目錄、備份與暫存檔，超限時保留原目標。
+- checkpoint 與知識替代先檢查新增 metadata 後的文件大小，通過後才建立私人 payload；恰好達到上限的內容仍可讀寫。
+
 ### Fixed — 2026-11-21：YAML／JSON 純量解析
 
 - YAML 日期與時間保留字串，手動省略 timestamp 引號後仍可保存。JSON／YAML 拒絕 NaN、Infinity 及指數溢位等非有限數值，回報 MEMORY_CORRUPT。

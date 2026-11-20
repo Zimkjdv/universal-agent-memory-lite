@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from uaml.errors import UamlError
-from uaml.formats import frontmatter, markdown
+from uaml.formats import MAX_DOCUMENT, frontmatter, markdown
 from uaml.project_memory import checkpoint
 from uaml.recovery import recover
 from uaml.storage import write
@@ -102,6 +102,19 @@ class RecoveryTests(Workspace):
         self.assertEqual(old_checkpoint, (self.repo / "docs/memory/checkpoint.json").read_bytes())
         report = recover(self.git, self.registry)
         self.assertNotIn("ghp_", str(report))
+
+    def test_checkpoint_size_growth_is_rejected_before_any_payload_is_written(self):
+        self.bind()
+        note = self.repo / "docs/memory/HANDOFF.md"
+        raw = note.read_bytes()
+        note.write_bytes(raw + b"x" * (MAX_DOCUMENT - len(raw)))
+        before = {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()}
+        with self.assertRaises(UamlError) as caught:
+            checkpoint(self.git, self.registry, "agent-" + "x" * 128)
+        self.assertEqual(caught.exception.code, "DOCUMENT_TOO_LARGE")
+        self.assertEqual(before, {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()})
+        note.write_bytes(raw)
+        self.assertEqual(checkpoint(self.git, self.registry, "manual")["status"], "CHECKPOINT_SAVED")
 
     def test_note_commands_are_returned_as_untrusted_text_only(self):
         self.bind()

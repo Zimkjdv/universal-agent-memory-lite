@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from .errors import UamlError
 from .dedup import catalog_hash
-from .formats import digest, fields, identifier, json_bytes, markdown, now, parse_json, read_bytes, safe_metadata, string, timestamp
+from .formats import check_document_size, digest, fields, identifier, json_bytes, markdown, now, parse_json, read_bytes, safe_metadata, string, timestamp
 from .knowledge import authorize, pending_transaction, validate
 from .paths import inside
 from .private_storage import artifact_directory
@@ -36,6 +36,7 @@ def transform(before, project_id, reason, updated_at):
             header["source_project_ids"].append(project_id)
     result = [markdown(old_header, old_body), markdown(new_header, new_body)]
     for raw in result:
+        check_document_size(raw)
         validate(raw)
     return result
 
