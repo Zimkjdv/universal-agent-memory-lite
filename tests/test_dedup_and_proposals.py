@@ -10,6 +10,7 @@ from uaml.errors import UamlError
 from uaml.formats import markdown
 from uaml.knowledge import add, get, search
 from uaml.proposals import apply, propose
+from uaml.storage import write
 
 from .test_knowledge import KnowledgeWorkspace
 
@@ -119,6 +120,71 @@ class ProposalTests(KnowledgeWorkspace):
         self.assertEqual(applied["revision"], 2)
         self.assertIn("新步驟", get(self.git, self.registry, header["id"])["untrusted_markdown"])
         self.assertIn(original, [p.read_bytes() for p in (self.registry.parent / "backups").glob("*.bak")])
+
+    def test_repeated_apply_is_a_read_only_success(self):
+        header, body = self.revision()
+        plan = propose(self.git, self.registry, self.source(header, body))
+        applied = apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])
+        before = {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()}
+        repeated = apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])
+        self.assertEqual(repeated, {**applied, "status": "KNOWLEDGE_ALREADY_APPLIED"})
+        self.assertEqual(before, {path: path.read_bytes() for path in self.base.rglob("*") if path.is_file()})
+
+    def test_new_note_proposal_is_also_safe_to_retry(self):
+        header, body = self.note()
+        plan = propose(self.git, self.registry, self.source(header, body))
+        self.assertEqual(apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])["status"], "KNOWLEDGE_APPLIED")
+        self.assertEqual(apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])["status"], "KNOWLEDGE_ALREADY_APPLIED")
+        self.assertEqual(get(self.git, self.registry, header["id"])["metadata"]["revision"], 1)
+
+    def test_publication_before_report_failure_can_be_retried_without_another_write(self):
+        header, body = self.revision()
+        plan = propose(self.git, self.registry, self.source(header, body))
+
+        def interrupted(*args, **kwargs):
+            write(*args, **kwargs)
+            raise OSError("Report interrupted after publication")
+
+        with patch("uaml.proposals.write", side_effect=interrupted):
+            with self.assertRaises(OSError):
+                apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])
+        with patch("uaml.proposals.write", side_effect=AssertionError("retry rewrote the note")):
+            self.assertEqual(apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])["status"],
+                             "KNOWLEDGE_ALREADY_APPLIED")
+
+    def test_retry_preserves_manual_edits_after_success(self):
+        header, body = self.revision()
+        plan = propose(self.git, self.registry, self.source(header, body))
+        apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])
+        target = self.vault / "UAML/Knowledge" / f"{header['id']}.md"
+        target.write_bytes(target.read_bytes() + b"manual edits")
+        original = target.read_bytes()
+        with self.assertRaises(UamlError) as error:
+            apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])
+        self.assertEqual(error.exception.code, "WRITE_CONFLICT")
+        self.assertEqual(target.read_bytes(), original)
+
+    def test_retry_checks_other_catalog_changes(self):
+        header, body = self.revision()
+        plan = propose(self.git, self.registry, self.source(header, body))
+        apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])
+        other, other_body = self.note(title="Docker networks", body="# Containers\\nBridge and port routing.")
+        add(self.git, self.registry, self.source(other, other_body))
+        with self.assertRaises(UamlError) as error:
+            apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])
+        self.assertEqual(error.exception.code, "WRITE_CONFLICT")
+
+    def test_retry_requires_current_write_grant_and_reviewed_plan(self):
+        header, body = self.revision()
+        plan = propose(self.git, self.registry, self.source(header, body))
+        apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])
+        with self.assertRaises(UamlError) as error:
+            apply(self.git, self.registry, plan["proposal_id"], "wrong")
+        self.assertEqual(error.exception.code, "WRITE_CONFLICT")
+        trust(self.git, self.registry, "read")
+        with self.assertRaises(UamlError) as error:
+            apply(self.git, self.registry, plan["proposal_id"], plan["plan_hash"])
+        self.assertEqual(error.exception.code, "KNOWLEDGE_ACCESS_DENIED")
 
     def test_manual_edit_after_review_is_preserved(self):
         header, body = self.revision()
@@ -235,3 +301,7 @@ class ProposalTests(KnowledgeWorkspace):
         plan = json.loads(result.stdout.decode("utf-8"))
         applied = subprocess.run(command + ["apply", plan["proposal_id"], "--expect-plan", plan["plan_hash"]], check=True, capture_output=True)
         self.assertEqual(json.loads(applied.stdout.decode("utf-8"))["status"], "KNOWLEDGE_APPLIED")
+
+        repeated = subprocess.run(command + ["apply", plan["proposal_id"], "--expect-plan", plan["plan_hash"]],
+                                  check=True, capture_output=True)
+        self.assertEqual(json.loads(repeated.stdout.decode("utf-8"))["status"], "KNOWLEDGE_ALREADY_APPLIED")

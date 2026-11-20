@@ -95,6 +95,10 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 使用 Windows 真實 junction／Unix symlink 將 Knowledge 或其父目錄轉向同一 Vault 內另一區域，確認 search／get／add 在讀取筆記前拒絕。明確 vault compare --knowledge 也拒絕連結目錄。一般檔案佔據 Knowledge 目錄時提供穩定診斷；既有一般與缺失目錄案例持續驗證。
 
+### 2026-11-21 知識提案重試回歸
+
+覆蓋修改既有筆記、新增筆記、實際發布後回報故障、重試時人工修改與其他目錄變動，以及 write grant／plan hash 檢查。成功重試逐檔核對內容與備份不變，CLI 重複 apply 回傳成功狀態。
+
 ## 16 項核心驗收
 
 | ID | 前置條件 | 操作 | 預期結果與證據 |

@@ -122,9 +122,11 @@ review_hash 綁定輸入內容及目前知識目錄，變更後須重新審查�
 & $pythonPath --repo $repoPath --registry $registryPath knowledge apply '<proposal-id>' --expect-plan '<plan-hash>'
 ```
 
-propose 只在 Registry 同層 proposals/ 保存本機提案／payload，不寫 Vault；read grant 可提案，apply 必須 write grant。差異超過 12 KiB 時明示截斷並附完整 payload 位置，不能把截斷摘要當成完整審閱。提案綁定 checkout、Project／Vault、原檔、payload 與整份目錄 hash；任何改變都拒絕套用。成功修改會備份原檔；不刪除或合併其他筆記。
+propose 只在 Registry 同層 proposals/ 保存本機提案／payload，不寫 Vault；read grant 可提案，apply 必須 write grant。差異超過 12 KiB 時明示截斷並附完整 payload 位置，不能把截斷摘要當成完整審閱。提案綁定 checkout、Project／Vault、原檔、payload 與整份目錄 hash；首次套用要求目前內容符合審閱時的證據。成功修改會備份原檔；不刪除或合併其他筆記。
 
 若有近似候選，apply 額外需要明確 --allow-similar。完全重複仍不得透過此參數建立第二份權威。修改 verified 的步驟或適用條件時，需更新較新的 checked_at 與有效證據，或明確降為 experimental；UAML 不代為執行驗證命令。可帶原因 deprecated 單篇筆記；跨筆記 supersedes/superseded_by 必須使用獨立 supersede 流程，單篇提案不能改寫關聯、原因或復活已替代筆記。
+
+若程序在寫入後、回報成功前中斷，可用原 proposal-id 與 plan_hash 重試。只有當目前筆記完全等於提案 payload，且其他知識仍符合原目錄證據時，才回報 KNOWLEDGE_ALREADY_APPLIED（exit 0）。重試仍需要目前的 write grant；目標的人工修改、其他筆記變動或計畫／payload 變動都要求重新審查。相同內容的成功重試保留 revision 與既有備份。
 
 ### 知識替代關係
 

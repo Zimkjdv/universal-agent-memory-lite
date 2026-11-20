@@ -108,9 +108,19 @@ def apply(git, registry_path: Path, proposal_id: str, expected_plan: str, allow_
         if current_vault != vault_path or current_root != root or context(git, manifest, vault_path, root) != value["context"]:
             raise UamlError("WRITE_CONFLICT", "Checkout, Vault or binding changed after review.")
         notes = inventory(root)
+        old = next((note for note in notes if note["metadata"]["id"] == header["id"]), None)
+        if old is not None and old["sha256"] == value["after_hash"]:
+            # Reconstruct the reviewed catalog by restoring just this target's
+            # before hash, or removing a newly created target.
+            previous = [note for note in notes if note["metadata"]["id"] != header["id"]]
+            if value["before_hash"] is not None:
+                previous.append({"metadata": {"id": header["id"]}, "sha256": value["before_hash"]})
+            if catalog_hash(previous) != value["catalog_hash"]:
+                raise UamlError("WRITE_CONFLICT", "Other knowledge changed; review the current inventory before retrying.")
+            return {"status": "KNOWLEDGE_ALREADY_APPLIED", "proposal_id": proposal_id, "id": header["id"],
+                    "revision": header["revision"], "sha256": digest(after)}
         if catalog_hash(notes) != value["catalog_hash"]:
             raise UamlError("WRITE_CONFLICT", "Knowledge inventory changed; propose again to review current candidates.")
-        old = next((note for note in notes if note["metadata"]["id"] == header["id"]), None)
         if (old["sha256"] if old else None) != value["before_hash"]:
             raise UamlError("WRITE_CONFLICT", "Target changed after review.")
         validate_change(header, body, old, manifest["project"]["id"])

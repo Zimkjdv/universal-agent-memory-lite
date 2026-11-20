@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-21：知識提案安全重試
+
+- 同一提案重試時，核對目前筆記等於完整 after payload，並以原 before hash 還原審閱時的目錄證據。確認後回報 KNOWLEDGE_ALREADY_APPLIED，保留原 revision 與備份。
+- write grant、計畫／payload hash、checkout／Vault 及其他知識的變更仍會檢查。
+
 ### Fixed — 2026-11-21：Knowledge 目錄授權範圍
 
 - 知識讀寫與明確副本比較會先檢查 Knowledge 根目錄及其 Vault 內父目錄。junction、symlink、其他 reparse point 或一般檔案會回報 UNSAFE_PATH，阻擋被轉向的筆記內容讀取。
