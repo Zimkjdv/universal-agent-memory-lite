@@ -22,11 +22,14 @@ def restore_dacl(directory, saved_acl, backend):
     c = backend.c
     descriptor, dacl = c.c_void_p(), c.c_void_p()
     present, defaulted = w.BOOL(), w.BOOL()
+    control, revision = w.WORD(), w.DWORD()
     convert = backend.adv.ConvertStringSecurityDescriptorToSecurityDescriptorW
     convert.argtypes, convert.restype = [w.LPCWSTR, w.DWORD, c.POINTER(c.c_void_p), c.c_void_p], w.BOOL
     extract = backend.adv.GetSecurityDescriptorDacl
     extract.argtypes = [c.c_void_p, c.POINTER(w.BOOL), c.POINTER(c.c_void_p), c.POINTER(w.BOOL)]
     extract.restype = w.BOOL
+    get_control = backend.adv.GetSecurityDescriptorControl
+    get_control.argtypes, get_control.restype = [c.c_void_p, c.POINTER(w.WORD), c.POINTER(w.DWORD)], w.BOOL
     set_info = backend.adv.SetNamedSecurityInfoW
     set_info.argtypes = [w.LPWSTR, w.DWORD, w.DWORD, c.c_void_p, c.c_void_p, c.c_void_p, c.c_void_p]
     set_info.restype = w.DWORD
@@ -36,7 +39,10 @@ def restore_dacl(directory, saved_acl, backend):
     try:
         if not extract(descriptor, c.byref(present), c.byref(dacl), c.byref(defaulted)) or not present:
             raise OSError("Cannot read the fixture's saved DACL.")
-        code = set_info(str(directory), 1, 4, None, None, dacl, None)
+        if not get_control(descriptor, c.byref(control), c.byref(revision)):
+            raise OSError("Cannot read the fixture's saved inheritance state.")
+        inheritance = 0x80000000 if control.value & 0x1000 else 0x20000000
+        code = set_info(str(directory), 1, 4 | inheritance, None, None, dacl, None)
         if code:
             raise OSError(code, "Cannot restore the fixture's DACL.")
     finally:
@@ -113,6 +119,37 @@ class CheckpointLocationTests(Workspace):
         self.assertEqual(error.exception.code, "CHECKPOINT_MARKER_CONFLICT")
         self.assertEqual(marker.read_bytes(), raw)
         self.assertEqual(legacy.read_bytes(), raw)
+
+    @unittest.skipUnless(os.name == "nt", "Windows legacy DACL restoration")
+    def test_restore_preserves_legacy_explicit_dacl_without_inherited_duplicates(self):
+        from ctypes import wintypes as w
+
+        directory = self.base / "legacy-acl"
+        directory.mkdir()
+        backend = WindowsAcl()
+        c = backend.c
+        descriptor = c.c_void_p()
+        convert = backend.adv.ConvertStringSecurityDescriptorToSecurityDescriptorW
+        convert.argtypes, convert.restype = [w.LPCWSTR, w.DWORD, c.POINTER(c.c_void_p), c.c_void_p], w.BOOL
+        set_file = backend.adv.SetFileSecurityW
+        set_file.argtypes, set_file.restype = [w.LPCWSTR, w.DWORD, c.c_void_p], w.BOOL
+        # Reproduce the legacy explicit ACL found on hosted Git directories.
+        sddl = f"D:(A;OICI;FA;;;{backend.current_sid})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)"
+        self.assertTrue(convert(sddl, 1, c.byref(descriptor), None))
+        try:
+            self.assertTrue(set_file(str(directory), 4, descriptor), c.get_last_error())
+        finally:
+            backend.kernel.LocalFree(descriptor)
+        before = backend.snapshot(directory)
+        saved_acl = self.base / "legacy-acl.txt"
+        subprocess.run(["icacls", str(directory), "/save", str(saved_acl)], capture_output=True, check=True)
+        try:
+            subprocess.run(["icacls", str(directory), "/deny",
+                            f"*{backend.current_sid}:(OI)(CI)(WD,AD,WEA,WA,DE,DC)"],
+                           capture_output=True, check=True)
+        finally:
+            restore_dacl(directory, saved_acl, backend)
+        self.assertEqual(backend.snapshot(directory), before)
 
     @unittest.skipUnless(os.name == "nt", "Windows directory DACL")
     def test_checkpoint_and_repair_with_windows_git_directory_write_denied(self):
