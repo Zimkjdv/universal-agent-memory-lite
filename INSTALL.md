@@ -191,13 +191,15 @@ REPLICA_CONFLICT 表示目前可用副本內容不同；select 需精確 compari
 
 ## 中斷 checkpoint 的安全復原
 
-若恢復回報 `CHECKPOINT_TRANSACTION_PENDING`，使用診斷中的 snapshot ID 與建立交易時的 Registry。舊版交易可從 Registry 同層 `transactions/<snapshot-id>.json` 找出 prepared journal。工具保存完整 before/after payload 後，將待完成 ID 存在此 checkout 的 Git 目錄，直到 Repo 記憶與 journal 都已完成。此期間另一筆 checkpoint 或 Fork 會被拒絕。`repair` 只能補完這個已保存快照：
+若恢復回報 `CHECKPOINT_TRANSACTION_PENDING`，使用診斷中的 snapshot ID 與建立交易時的 Registry。舊版交易可從 Registry 同層 `transactions/<snapshot-id>.json` 找出 prepared journal。工具保存完整 before/after payload 後，將待完成 ID 寫入專案的 .uaml/checkpoint-pending.json，直到 Repo 記憶與 journal 都已完成才清除。此期間另一筆 checkpoint 或 Fork 會被拒絕。`repair` 只能補完這個已保存快照：
 
 ```powershell
 & $pythonPath --repo $repoPath --registry $registryPath --json repair --transaction '<snapshot-id>'
 # 檢視 actions 後，複製輸出的 plan_hash
 & $pythonPath --repo $repoPath --registry $registryPath --json repair --transaction '<snapshot-id>' --apply --expect-plan '<plan-hash>'
 ```
+
+新流程可在 Git metadata 唯讀時使用，專案記憶及私人 Registry 仍需具備適當寫入權限。暫時標記會在中斷時留在工作目錄，應先修復交易，完成後再提交專案。舊版 Git 目錄內的 uaml-checkpoint-pending.json 仍會被辨識，補完原交易時需要清除該舊標記的權限。兩處同時出現標記會回報 CHECKPOINT_MARKER_CONFLICT，請核對原 journal、備份與目前檔案。修復計畫也綁定標記位置，移動標記後需重新預覽。
 
 預覽完全唯讀；apply 在合作鎖內重新檢查身份、payload 及每個目標 hash，最後公布 checkpoint。任一目標已被另外修改、Binding 改變或 payload 損壞，全部檢查通過前不寫入。apply 中再中斷可重新預覽後續步驟。只保留及補完資料，不刪除或回滾人工成果。
 

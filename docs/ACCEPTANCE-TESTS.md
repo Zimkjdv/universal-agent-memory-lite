@@ -99,6 +99,12 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 覆蓋修改既有筆記、新增筆記、實際發布後回報故障、重試時人工修改與其他目錄變動，以及 write grant／plan hash 檢查。成功重試逐檔核對內容與備份不變，CLI 重複 apply 回傳成功狀態。
 
+### 2026-11-21 唯讀 Git 目錄回歸
+
+新 checkpoint 與 repair 保留 Git 檔案 bytes。Windows 測試在臨時 Repo 的 Git 目錄施加精確寫入拒絕 DACL，先確認無法新增檔案，再完成 checkpoint、中斷與修復；finally 以原生 API 還原已保存的原始 DACL，核對權限與檔案一致。另驗證舊位置標記相容、雙標記衝突、標記位置改變後的 plan hash 失效，以及原有 linked worktree 與五個程序終止點。[Microsoft 權限命令](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/icacls)
+
+2026-11-21 第九輪整合結果：從 sdist 建置 wheel，在乾淨 venv 以本地 wheelhouse 離線安裝。artifact inventory、安裝來源、pip check、示範與完整 suite 通過。共 284 項案例，282 項通過、2 項 POSIX 案例於 Windows 跳過。
+
 ## 16 項核心驗收
 
 | ID | 前置條件 | 操作 | 預期結果與證據 |

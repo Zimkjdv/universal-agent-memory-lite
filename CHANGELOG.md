@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Fixed — 2026-11-21：checkpoint 與唯讀 Git 目錄相容
+
+- 新 checkpoint 將暫時標記寫入專案 .uaml/checkpoint-pending.json，成功後清除；保留原 journal／payload 及 worktree 隔離。
+- 既有 Git 目錄內的標記繼續由原交易修復；兩個位置同時存在標記時回報 CHECKPOINT_MARKER_CONFLICT，供人工核對。
+
 ### Fixed — 2026-11-21：知識提案安全重試
 
 - 同一提案重試時，核對目前筆記等於完整 after payload，並以原 before hash 還原審閱時的目錄證據。確認後回報 KNOWLEDGE_ALREADY_APPLIED，保留原 revision 與備份。

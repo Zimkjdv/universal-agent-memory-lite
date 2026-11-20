@@ -124,7 +124,8 @@ class RepairTests(Workspace):
         other_git = type(self.git)(worktree)
         self.assertFalse(checkpoint_marker(other_git).exists())
         self.assertEqual(json.loads(checkpoint_marker(self.git).read_bytes())["snapshot_id"], transaction)
-        self.assertNotIn(b"uaml-checkpoint-pending", self.git_cmd("status", "--porcelain", "--untracked-files=all"))
+        self.assertIn(b".uaml/checkpoint-pending.json", self.git_cmd("status", "--porcelain", "--untracked-files=all"))
+        self.assertEqual(self.git_cmd("ls-files", "--", ".uaml/checkpoint-pending.json"), b"")
 
     def test_manual_edit_after_interruption_is_never_overwritten(self):
         transaction = self.interrupted()

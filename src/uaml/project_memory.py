@@ -68,7 +68,15 @@ def exclusions(manifest):
 
 
 def checkpoint_marker(git):
-    return inside(git.directory(), "uaml-checkpoint-pending.json")
+    marker = inside(git.root, ".uaml/checkpoint-pending.json")
+    legacy = inside(git.directory(), "uaml-checkpoint-pending.json")
+    # Existing interrupted transactions keep their original marker location.
+    if pending_checkpoint(legacy) is not None:
+        if pending_checkpoint(marker) is not None:
+            raise UamlError("CHECKPOINT_MARKER_CONFLICT",
+                            "Checkpoint markers exist in both locations. Inspect the original journals before continuing.")
+        return legacy
+    return marker
 
 
 def pending_checkpoint(marker):

@@ -210,3 +210,7 @@ Vault `.uaml/knowledge-transaction.json` 只保存 schema_version=1、kind=knowl
 修訂保留 id、created_at、既有來源專案，revision 恰加一，updated_at 不倒退；包含當前修改專案作為來源。步驟或 applicability 變更且仍為 verified 時，checked_at 必須比舊驗證更新並有有效證據，否則拒絕。單篇提案不可改寫 supersession 關係。
 
 精確去重 key 包含標題、分類、換行正規化正文、適用條件、狀態、驗證證據及關聯。ID、revision、建立／更新／驗證時間與來源 Project 是 provenance，不作為產生第二份權威的理由；發現重複只回傳既有 ID，不合併新 provenance。近似以 Unicode/CJK tokens 的標題 0.4／正文 0.6 Jaccard、0.65 門檻提出候選；不同 OS／架構／元件版本／conditions 不納入同組。這是保守文字候選，不能證明語意相同。
+
+### Checkout 暫時標記
+
+新 checkpoint 在 .uaml/checkpoint-pending.json 保存 schema_version=1 及 snapshot_id，沒有私人路徑或正文。完成 journal 後清除。舊版標記位於該 worktree 的 Git 目錄，仍可讀取及修復；兩處同時存在時停止自動處理。標記與私有 v2 journal 的資料結構維持相容。

@@ -82,7 +82,7 @@ def inspect(git, registry_path: Path, transaction_id: str):
         current[entry["path"]] = current_hash
         prepared[entry["path"]] = after
         actions.append({"path": entry["path"], "action": "keep" if current_hash == entry["after_hash"] else "finish"})
-    plan_hash = digest(json_bytes({"journal_hash": digest(raw), "current_hashes": current, "pending": pending}))
+    plan_hash = digest(json_bytes({"journal_hash": digest(raw), "current_hashes": current, "pending": pending, "marker": str(marker)}))
     repair_needed = value["status"] == "prepared" or pending is not None
     plan = {"status": "REPAIR_PREVIEW" if repair_needed else "REPAIR_NOT_NEEDED",
             "transaction_id": transaction_id, "plan_hash": plan_hash, "actions": actions,
