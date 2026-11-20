@@ -15,41 +15,55 @@ from uaml.storage import write
 from .support import Workspace
 
 
-def restore_dacl(directory, saved_acl, backend):
-    """Restore this fixture's saved DACL without requiring SeRestorePrivilege."""
+def save_dacls(directory, backend):
+    """Capture owner/DACL SDDL for every object in this disposable fixture."""
     from ctypes import wintypes as w
 
     c = backend.c
-    descriptor, dacl = c.c_void_p(), c.c_void_p()
-    present, defaulted = w.BOOL(), w.BOOL()
-    control, revision = w.WORD(), w.DWORD()
+    convert = backend.adv.ConvertSecurityDescriptorToStringSecurityDescriptorW
+    convert.argtypes = [c.c_void_p, w.DWORD, w.DWORD, c.POINTER(c.c_void_p), c.c_void_p]
+    convert.restype = w.BOOL
+    saved = {}
+    for path in (directory, *directory.rglob("*")):
+        descriptor, text = c.c_void_p(), c.c_void_p()
+        code = backend.adv.GetNamedSecurityInfoW(str(path), 1, 5, None, None, None, None, c.byref(descriptor))
+        if code:
+            raise OSError(code, "Cannot capture the fixture's original permissions.")
+        try:
+            if not convert(descriptor, 1, 5, c.byref(text), None):
+                raise c.WinError(c.get_last_error())
+            saved[path] = c.wstring_at(text)
+        finally:
+            backend.kernel.LocalFree(text)
+            backend.kernel.LocalFree(descriptor)
+    return saved
+
+
+def restore_dacls(saved, backend):
+    """Restore each saved DACL without triggering automatic child inheritance."""
+    from ctypes import wintypes as w
+
+    c = backend.c
     convert = backend.adv.ConvertStringSecurityDescriptorToSecurityDescriptorW
     convert.argtypes, convert.restype = [w.LPCWSTR, w.DWORD, c.POINTER(c.c_void_p), c.c_void_p], w.BOOL
-    extract = backend.adv.GetSecurityDescriptorDacl
-    extract.argtypes = [c.c_void_p, c.POINTER(w.BOOL), c.POINTER(c.c_void_p), c.POINTER(w.BOOL)]
-    extract.restype = w.BOOL
-    get_control = backend.adv.GetSecurityDescriptorControl
-    get_control.argtypes, get_control.restype = [c.c_void_p, c.POINTER(w.WORD), c.POINTER(w.DWORD)], w.BOOL
-    set_info = backend.adv.SetNamedSecurityInfoW
-    set_info.argtypes = [w.LPWSTR, w.DWORD, w.DWORD, c.c_void_p, c.c_void_p, c.c_void_p, c.c_void_p]
-    set_info.restype = w.DWORD
-    sddl = saved_acl.read_text(encoding="utf-16-le").splitlines()[1]
-    if not convert(sddl, 1, c.byref(descriptor), None):
-        raise OSError("Cannot parse the fixture's saved DACL.")
-    try:
-        if not extract(descriptor, c.byref(present), c.byref(dacl), c.byref(defaulted)) or not present:
-            raise OSError("Cannot read the fixture's saved DACL.")
-        if not get_control(descriptor, c.byref(control), c.byref(revision)):
-            raise OSError("Cannot read the fixture's saved inheritance state.")
-        inheritance = 0x80000000 if control.value & 0x1000 else 0x20000000
-        code = set_info(str(directory), 1, 4 | inheritance, None, None, dacl, None)
-        if code:
-            raise OSError(code, "Cannot restore the fixture's DACL.")
-    finally:
-        backend.kernel.LocalFree(descriptor)
+    # This low-level fixture-only API applies the saved descriptor directly.
+    # SetNamedSecurityInfo recomputes inheritance on hosted Windows runners.
+    set_file = backend.adv.SetFileSecurityW
+    set_file.argtypes, set_file.restype = [w.LPCWSTR, w.DWORD, c.c_void_p], w.BOOL
+    for path, sddl in saved.items():
+        descriptor = c.c_void_p()
+        if not convert(sddl, 1, c.byref(descriptor), None):
+            raise c.WinError(c.get_last_error())
+        try:
+            if not set_file(str(path), 4, descriptor):  # DACL only; retain owner.
+                raise c.WinError(c.get_last_error())
+        finally:
+            backend.kernel.LocalFree(descriptor)
 
 
 class CheckpointLocationTests(Workspace):
+    maxDiff = None
+
     def setUp(self):
         super().setUp()
         self.bind()
@@ -140,26 +154,27 @@ class CheckpointLocationTests(Workspace):
             self.assertTrue(set_file(str(directory), 4, descriptor), c.get_last_error())
         finally:
             backend.kernel.LocalFree(descriptor)
+        (directory / "child").mkdir()
+        (directory / "child" / "fixture.txt").write_text("fixture", encoding="utf-8")
         before = backend.snapshot(directory)
-        saved_acl = self.base / "legacy-acl.txt"
-        subprocess.run(["icacls", str(directory), "/save", str(saved_acl)], capture_output=True, check=True)
+        saved = save_dacls(directory, backend)
         try:
             subprocess.run(["icacls", str(directory), "/deny",
                             f"*{backend.current_sid}:(OI)(CI)(WD,AD,WEA,WA,DE,DC)"],
                            capture_output=True, check=True)
         finally:
-            restore_dacl(directory, saved_acl, backend)
+            restore_dacls(saved, backend)
         self.assertEqual(backend.snapshot(directory), before)
+        self.assertEqual(save_dacls(directory, backend), saved)
 
     @unittest.skipUnless(os.name == "nt", "Windows directory DACL")
     def test_checkpoint_and_repair_with_windows_git_directory_write_denied(self):
         directory = self.git.directory()
         self.assertTrue(directory.is_relative_to(self.base))
-        saved_acl = self.base / "git-acl.txt"
         backend = WindowsAcl()
         permissions_before = backend.snapshot(directory)
         files_before = {path: path.read_bytes() for path in directory.rglob("*") if path.is_file()}
-        subprocess.run(["icacls", str(directory), "/save", str(saved_acl)], capture_output=True, check=True)
+        saved = save_dacls(directory, backend)
         try:
             subprocess.run(["icacls", str(directory), "/deny", f"*{backend.current_sid}:(OI)(CI)(WD,AD,WEA,WA,DE,DC)"],
                            capture_output=True, check=True)
@@ -171,6 +186,7 @@ class CheckpointLocationTests(Workspace):
             self.assertEqual(repair(self.git, self.registry, transaction, True, plan["plan_hash"])["status"], "REPAIRED")
             self.assertEqual(recover(self.git, self.registry)["status"], "RECOVERED")
         finally:
-            restore_dacl(directory, saved_acl, backend)
+            restore_dacls(saved, backend)
         self.assertEqual(backend.snapshot(directory), permissions_before)
+        self.assertEqual(save_dacls(directory, backend), saved)
         self.assertEqual(files_before, {path: path.read_bytes() for path in directory.rglob("*") if path.is_file()})

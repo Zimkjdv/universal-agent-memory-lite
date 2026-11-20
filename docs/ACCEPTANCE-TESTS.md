@@ -105,7 +105,7 @@ Windows hosted runner 另使用 RUNNER~1 的 TEMP 別名；兩個 mock 將短名
 
 2026-11-21 第九輪整合結果：從 sdist 建置 wheel，在乾淨 venv 以本地 wheelhouse 離線安裝。artifact inventory、安裝來源、pip check、示範與完整 suite 通過。共 284 項案例，282 項通過、2 項 POSIX 案例於 Windows 跳過。
 
-上述 284 項結果為本機驗證。8c71e9c 的遠端 Windows CI 發現測試輔助函式還原舊式明確 DACL 時新增繼承 ACE，造成最後的權限一致性斷言失敗；checkpoint 與 repair 操作已成功。後續保留保存描述元的繼承保護狀態，新增同型 ACL 的重現案例。本機 6 項 checkpoint 位置測試通過（含兩項真實 Windows DACL 案例），總案例增至 285；遠端四組結果以補正提交的 Actions run 為準。
+上述 284 項結果為本機驗證。8c71e9c 的遠端 Windows CI 發現測試輔助函式還原舊式明確 DACL 時新增繼承 ACE，造成最後的權限一致性斷言失敗；checkpoint 與 repair 操作已成功。第一次補正保留繼承保護旗標並新增同型 ACL 重現案例，本機通過但 hosted Windows 仍失敗。後續改為以原生 API 保存每個子項的 owner／DACL SDDL，再用不自動傳播繼承的 SetFileSecurityW 逐項還原 DACL；核對所有子項完整權限（含繼承 ACE）與 Git 檔案內容。此低階 API 僅用於測試 fixture，不改正式權限政策或生產程式。本機 6 項 checkpoint 位置測試通過（含兩項真實 Windows DACL 案例），總案例增至 285；遠端四組結果以補正提交的 Actions run 為準。[Microsoft API 說明](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-setfilesecurityw)
 
 ## 16 項核心驗收
 

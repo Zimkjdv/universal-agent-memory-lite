@@ -8,7 +8,7 @@
 
 - 新 checkpoint 將暫時標記寫入專案 .uaml/checkpoint-pending.json，成功後清除；保留原 journal／payload 及 worktree 隔離。
 - 既有 Git 目錄內的標記繼續由原交易修復；兩個位置同時存在標記時回報 CHECKPOINT_MARKER_CONFLICT，供人工核對。
-- 補正 Windows CI 測試輔助函式：還原保存的 DACL 時保留原始繼承保護狀態，避免舊式明確 ACL 被加入父目錄授權；新增重現案例，維持權限完全一致的斷言。
+- 補正 Windows CI 測試輔助函式：保存臨時 Git 目錄與每個子項的 owner／DACL，逐項直接還原，避免自動繼承加入父目錄授權；新增舊式明確 ACL 的重現案例，逐項核對完整權限及檔案內容。
 
 ### Fixed — 2026-11-21：知識提案安全重試
 
